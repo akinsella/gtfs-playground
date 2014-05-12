@@ -7,22 +7,22 @@ logger = require './log/logger'
 cluster = recluster "#{__dirname}/app"
 
 cluster.on "fork", (worker) ->
-	logger.info "Forking cluster: #{worker.process.pid}"
+	logger.info "[#{worker.process.pid}] Forking cluster"
 
 cluster.on "setup", (worker) ->
-	logger.info "Setuping cluster: #{worker.process.pid}"
+	logger.info "[#{worker.process.pid}] Setuping cluster"
 
 cluster.on "listening", (worker, address) ->
-	logger.info "Worker listening at address: #{address}: #{worker.process.pid}"
+	logger.info "[#{worker.process.pid}] Worker listening"
 
 cluster.on "online", (worker) ->
-	logger.info "Worker online: #{worker.process.pid}"
+	logger.info "[#{worker.process.pid}] Worker online"
 
 cluster.on "disconnect", (worker) ->
-	logger.info "Worker disconnecting Cluster: #{worker.process.pid}"
+	logger.info "[#{worker.process.pid}] Worker disconnecting Cluster"
 
 cluster.on "exit", (worker) ->
-	logger.info "Worker exiting Cluster: #{worker.process.pid}"
+	logger.info "[#{worker.process.pid}] Worker exiting Cluster"
 
 cluster.run()
 

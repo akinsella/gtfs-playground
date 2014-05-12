@@ -41,7 +41,7 @@ init = () ->
 class ProcessRecord
 	run: (message, callback) ->
 #
-		jsonMessage = JSON.parse(message)
+		jsonMessage = message
 
 		model = jsonMessage.model
 		agency_key = jsonMessage.agency.key
@@ -63,24 +63,25 @@ class ProcessRecord
 			agency_bounds.sw[1] = line.loc[1]  if agency_bounds.sw[1] > line.loc[1] or not agency_bounds.sw[1]
 			agency_bounds.ne[1] = line.loc[1]  if agency_bounds.ne[1] < line.loc[1] or not agency_bounds.ne[1]
 
-		logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}]" if index % 100 == 0
-
 		models[model](line).save (err, inserted) ->
 			if err
 				console.log "[#{process.pid}][#{agency_key}][#{model}][#{index}] Error: #{err.message}"
 			if !inserted
-				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line could not be inserted" if index % 100 == 0
+				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line could not be inserted" if index % 10000 == 0
 			else
-				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line inserted" if index % 100 == 0
-		logger.info "[#{process.pid}][#{index}][QUEUE] Line inserted" if index % 100 == 0
-		callback(err, inserted)
+				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line inserted" if index % 10000 == 0
+			logger.info "[#{process.pid}][#{index}][QUEUE] Line inserted" if index % 10000 == 0
+			callback(err, inserted)
 
 
 bokeh  = require 'bokeh'
 
 broker = new bokeh.Broker config.bokeh
+logger.info "[#{process.pid}] Initialized bokeh broker"
 client = new bokeh.Client config.bokeh
+logger.info "[#{process.pid}] Initialized bokeh client"
 worker = new bokeh.Worker config.bokeh
+logger.info "[#{process.pid}] Initialized bokeh worker"
 worker.registerTask "ProcessRecord", ProcessRecord
 
 
@@ -245,14 +246,13 @@ downloadGTFS = (task, cb) ->
 				.on "record", (line, index) ->
 					logger.info "[#{index}] push.send" if index % 10000 == 0
 
-					record = JSON.stringify(
+					record =
 						model: GTFSFile.collection.modelName
 						index: index
 						line: line
 						agency:
 							key: agency_key
 							bounds: agency_bounds
-					)
 
 					client.submitTask "ProcessRecord", record, (error, data) ->
 						logger.info "[#{index}] push.send" if index % 10000 == 0

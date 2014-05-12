@@ -47,12 +47,11 @@ if !config
 				{ agency_key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
 			]
 		bokeh:
+			dealer: "tcp://127.0.0.1:8001"
+			router: "tcp://127.0.0.1:8002"
 			store:
 				type: "memory"
-				options:
-#					dealer: "tcp://127.0.0.1:8001"
-#					router: "tcp://127.0.0.1:8002"
-				maxConnections: 2000
+				maxConnections: 100
 			log:
 				level: "debug"
 				path:  "#{__dirname}/../log/bokeh.log"

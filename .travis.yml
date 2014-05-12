@@ -1,0 +1,14 @@
+language: node_js
+node_js:
+  - 0.10
+services: mongodb
+before_script:
+  - npm install -g grunt-cli
+  - grunt clean build
+script: grunt coveralls
+env:
+  global:
+  - LC_ALL="en_US.UTF-8"
+notifications:
+  recipients:
+  - alexis.kinsella@gmail.com

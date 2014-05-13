@@ -18,7 +18,7 @@ logger.info("config: " + JSON.stringify(config.mongo))
 url = "mongodb://#{config.mongo.hostname}:#{config.mongo.port}/#{config.mongo.dbname}"
 options =
 	db: { native_parser: false }
-	server: { poolSize: 20 }
+	server: { poolSize: 50 }
 	user: config.mongo.username
 	pass: config.mongo.password
 

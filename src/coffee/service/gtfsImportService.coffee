@@ -39,38 +39,43 @@ init = () ->
 
 
 class ProcessRecord
-	run: (message, callback) ->
+	run: (messages, callback) ->
 #
-		jsonMessage = message
+		jsonMessages = messages
 
-		model = jsonMessage.model
-		agency_key = jsonMessage.agency.key
-		agency_bounds = jsonMessage.agency.bounds
-		line = jsonMessage.line
-		index = jsonMessage.index
+		lines = jsonMessages.map (jsonMessage) ->
 
-		for key of line
-			delete line[key]  if line[key] is null
+			agency_key = jsonMessage.agency.key
+			agency_bounds = jsonMessage.agency.bounds
+			line = jsonMessage.line
 
-		line.agency_key = agency_key
-		line.stop_sequence = parseInt(line.stop_sequence, 10)  if line.stop_sequence
-		line.direction_id = parseInt(line.direction_id, 10)  if line.direction_id
+			for key of line
+				delete line[key]  if line[key] is null
 
-		if line.stop_lat and line.stop_lon
-			line.loc = [ parseFloat(line.stop_lon), parseFloat(line.stop_lat) ]
-			agency_bounds.sw[0] = line.loc[0]  if agency_bounds.sw[0] > line.loc[0] or not agency_bounds.sw[0]
-			agency_bounds.ne[0] = line.loc[0]  if agency_bounds.ne[0] < line.loc[0] or not agency_bounds.ne[0]
-			agency_bounds.sw[1] = line.loc[1]  if agency_bounds.sw[1] > line.loc[1] or not agency_bounds.sw[1]
-			agency_bounds.ne[1] = line.loc[1]  if agency_bounds.ne[1] < line.loc[1] or not agency_bounds.ne[1]
+			line.agency_key = agency_key
+			line.stop_sequence = parseInt(line.stop_sequence, 10)  if line.stop_sequence
+			line.direction_id = parseInt(line.direction_id, 10)  if line.direction_id
 
-		models[model](line).save (err, inserted) ->
+			if line.stop_lat and line.stop_lon
+				line.loc = [ parseFloat(line.stop_lon), parseFloat(line.stop_lat) ]
+				agency_bounds.sw[0] = line.loc[0]  if agency_bounds.sw[0] > line.loc[0] or not agency_bounds.sw[0]
+				agency_bounds.ne[0] = line.loc[0]  if agency_bounds.ne[0] < line.loc[0] or not agency_bounds.ne[0]
+				agency_bounds.sw[1] = line.loc[1]  if agency_bounds.sw[1] > line.loc[1] or not agency_bounds.sw[1]
+				agency_bounds.ne[1] = line.loc[1]  if agency_bounds.ne[1] < line.loc[1] or not agency_bounds.ne[1]
+
+			line
+
+		agency_key = jsonMessages[0].agency.key
+		model = jsonMessages[0].model
+		index = jsonMessages[0].index
+
+		models[model].create lines, (err, inserted) ->
 			if err
 				console.log "[#{process.pid}][#{agency_key}][#{model}][#{index}] Error: #{err.message}"
 			if !inserted
-				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line could not be inserted" if index % 10000 == 0
+				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line could not be inserted"
 			else
-				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line inserted" if index % 10000 == 0
-			logger.info "[#{process.pid}][#{index}][QUEUE] Line inserted" if index % 10000 == 0
+				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line inserted"
 			callback(err, inserted)
 
 
@@ -235,6 +240,7 @@ downloadGTFS = (task, cb) ->
 
 	importFiles = (cb) ->
 
+		records = []
 		logger.info "Importing GTFS files ..."
 		gtfsFileProcessor = (GTFSFile, cb) ->
 			logger.info "Importing GTFS file: '#{GTFSFile.fileNameBase}' ..."
@@ -246,7 +252,7 @@ downloadGTFS = (task, cb) ->
 				.on "record", (line, index) ->
 					logger.info "[#{index}] push.send" if index % 10000 == 0
 
-					record =
+					records.push
 						model: GTFSFile.collection.modelName
 						index: index
 						line: line
@@ -254,10 +260,15 @@ downloadGTFS = (task, cb) ->
 							key: agency_key
 							bounds: agency_bounds
 
-					client.submitTask "ProcessRecord", record, (error, data) ->
-						logger.info "[#{index}] push.send" if index % 10000 == 0
+					if records.length == 1024
+						client.submitTask "ProcessRecord", records, (error, data) ->
+							logger.info "[#{index}] push.send" if index % 10000 == 0
+
+						records = []
 
 				.on "end", (count) ->
+					client.submitTask "ProcessRecord", records, (error, data) ->
+						logger.info "[---] push.send ended"
 					cb()
 				.on "error", handleError
 

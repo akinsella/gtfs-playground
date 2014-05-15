@@ -68,7 +68,8 @@
     "csv": "*",
     "unzip": "*",
     "zmq": "~2.7.0",
-    "zmq-bokeh": "~0.4.4"
+    "zmq-bokeh": "~0.4.4",
+    "heapdump": "~0.2.7"
   },
   "devDependencies": {
     "should": "2.1.1",

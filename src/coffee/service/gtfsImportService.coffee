@@ -10,6 +10,7 @@ csv = require 'csv'
 async = require 'async'
 unzip = require 'unzip'
 Q = require 'q'
+heapdump = require 'heapdump'
 
 mongo = require '../lib/mongo'
 config = require '../conf/config'
@@ -39,8 +40,10 @@ init = () ->
 
 
 class ProcessRecord
+
+	count = 0
+
 	run: (messages, callback) ->
-#
 		jsonMessages = messages
 
 		lines = jsonMessages.map (jsonMessage) ->
@@ -70,12 +73,18 @@ class ProcessRecord
 		index = jsonMessages[0].index
 
 		models[model].create lines, (err, inserted) ->
+			count++
+
+#			if count % 100 == 0
+#				heapdump.writeSnapshot()
+
 			if err
 				console.log "[#{process.pid}][#{agency_key}][#{model}][#{index}] Error: #{err.message}"
 			if !inserted
 				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line could not be inserted"
 			else
 				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] Line inserted"
+
 			callback(err, inserted)
 
 
@@ -260,7 +269,10 @@ downloadGTFS = (task, cb) ->
 							key: agency_key
 							bounds: agency_bounds
 
-					if records.length == 512
+					if records.length == 1000
+
+#						processEntries records, (err, data) ->
+#							logger.info "[#{index}] push.send" if index % 10000 == 0
 						client.submitTask "ProcessRecord", records, (error, data) ->
 							logger.info "[#{index}] push.send" if index % 10000 == 0
 

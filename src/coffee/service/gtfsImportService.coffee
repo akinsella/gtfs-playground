@@ -79,7 +79,7 @@ class ProcessRecord
 			callback(err, inserted)
 
 
-bokeh  = require 'bokeh'
+bokeh  = require 'zmq-bokeh'
 
 broker = new bokeh.Broker config.bokeh
 logger.info "[#{process.pid}] Initialized bokeh broker"
@@ -260,7 +260,7 @@ downloadGTFS = (task, cb) ->
 							key: agency_key
 							bounds: agency_bounds
 
-					if records.length == 1024
+					if records.length == 512
 						client.submitTask "ProcessRecord", records, (error, data) ->
 							logger.info "[#{index}] push.send" if index % 10000 == 0
 

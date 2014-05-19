@@ -69,7 +69,9 @@
     "unzip": "*",
     "zmq": "~2.7.0",
     "zmq-bokeh": "~0.4.4",
-    "heapdump": "~0.2.7"
+    "heapdump": "~0.2.7",
+    "batch-stream": "0.0.1",
+    "csv-streamify": "~1.0.0"
   },
   "devDependencies": {
     "should": "2.1.1",
@@ -92,7 +94,8 @@
     "grunt-istanbul": "0.2.4",
     "grunt-shell": "0.6.1",
     "grunt-contrib-sass": "0.6.0",
-    "grunt-notify": "0.2.17"
+    "grunt-notify": "0.2.17",
+    "path-extra": "~0.2.0"
   },
   "scripts": {
     "prepublish": "npm prune",

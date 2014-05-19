@@ -27,14 +27,10 @@ handleError = (e) ->
 	process.exit 1
 
 agencies = (cb) ->
-
-	#gets a list of all agencies
 	Agency.find({}, cb)
 
 
 getRoutesByAgency = (agency_key, cb) ->
-
-	#gets routes for one agency
 	Route.find({ agency_key: agency_key } , cb)
 
 
@@ -52,6 +48,7 @@ getAgenciesByDistance = (lat, lon, radius, cb) ->
 		.near(lon, lat)
 		.maxDistance(radiusInDegrees)
 		.exec(cb)
+
 
 getRoutesByDistance = (lat, lon, radius, cb) ->
 

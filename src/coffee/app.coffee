@@ -84,8 +84,7 @@ gtfsImportController = require './controller/importController'
 
 app.get "/import", gtfsImportController.importData
 
-gtfsImportService = require './service/gtfsImportService'
-gtfsImportService.init()
+
 
 ########################################################################################
 ### Http Server - Startup

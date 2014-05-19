@@ -2,26 +2,20 @@
 ### Modules
 ########################################################################################
 
-config = require '../conf/config'
+Q = require 'q'
+
 logger = require '../log/logger'
 
-agencyImporter = require './agencyImporter'
 
 
 ########################################################################################
-### Init
+### Functions
 ########################################################################################
 
-createTaskProcessor = (GTFSFiles, downloadDir) ->
+removeCollectionByModel = (model, agencyKey) ->
 
-	(task, cb) ->
-
-		agency = { key: task.agency_key, url: task.agency_url }
-
-		agencyImporter.importAgency(agency, GTFSFiles, downloadDir)
-		.then((data) -> cb(data))
-		.fail((err) -> cb(err))
-
+	logger.info "Removing database collection: '#{model.modelName}' ..."
+	Q.when(model.remove({ agency_key: agencyKey }).exec())
 
 
 ########################################################################################
@@ -29,4 +23,4 @@ createTaskProcessor = (GTFSFiles, downloadDir) ->
 ########################################################################################
 
 module.exports =
-	createTaskProcessor: createTaskProcessor
+	removeCollectionByModel: removeCollectionByModel

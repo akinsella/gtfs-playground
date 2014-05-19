@@ -54,23 +54,23 @@ class GtfsRecordsImportTask
 
 		lines = jsonMessages.map (jsonMessage) ->
 
-			agency_key = jsonMessage.agency.key
-			agency_bounds = jsonMessage.agency.bounds
+			agencyKey = jsonMessage.agency.key
+			agencyBounds = jsonMessage.agency.bounds
 			line = jsonMessage.line
 
 			for key of line
 				delete line[key]  if line[key] is null
 
-			line.agency_key = agency_key
+			line.agency_key = agencyKey
 			line.stop_sequence = parseInt(line.stop_sequence, 10)  if line.stop_sequence
 			line.direction_id = parseInt(line.direction_id, 10)  if line.direction_id
 
 			if line.stop_lat and line.stop_lon
 				line.loc = [ parseFloat(line.stop_lon), parseFloat(line.stop_lat) ]
-				agency_bounds.sw[0] = line.loc[0]  if agency_bounds.sw[0] > line.loc[0] or not agency_bounds.sw[0]
-				agency_bounds.ne[0] = line.loc[0]  if agency_bounds.ne[0] < line.loc[0] or not agency_bounds.ne[0]
-				agency_bounds.sw[1] = line.loc[1]  if agency_bounds.sw[1] > line.loc[1] or not agency_bounds.sw[1]
-				agency_bounds.ne[1] = line.loc[1]  if agency_bounds.ne[1] < line.loc[1] or not agency_bounds.ne[1]
+				agencyBounds.sw[0] = line.loc[0]  if agencyBounds.sw[0] > line.loc[0] or not agencyBounds.sw[0]
+				agencyBounds.ne[0] = line.loc[0]  if agencyBounds.ne[0] < line.loc[0] or not agencyBounds.ne[0]
+				agencyBounds.sw[1] = line.loc[1]  if agencyBounds.sw[1] > line.loc[1] or not agencyBounds.sw[1]
+				agencyBounds.ne[1] = line.loc[1]  if agencyBounds.ne[1] < line.loc[1] or not agencyBounds.ne[1]
 
 			line
 

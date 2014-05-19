@@ -6,7 +6,7 @@ util = require 'util'
 stream = require 'stream'
 
 config = require '../conf/config'
-
+logger = require '../log/logger'
 
 
 ########################################################################################
@@ -34,6 +34,7 @@ CsvLineToObjectStream.prototype._transform = (chunk, encoding, callback) ->
 			key: @agency_key
 			bounds: @agency_bounds
 	)
+
 	callback()
 
 

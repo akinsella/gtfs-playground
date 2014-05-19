@@ -2,26 +2,24 @@
 ### Modules
 ########################################################################################
 
-config = require '../conf/config'
+Q = require 'q'
+
 logger = require '../log/logger'
 
-agencyImporter = require './agencyImporter'
-
+gtfsFileImporter = require './gtfsFileImporter'
 
 ########################################################################################
-### Init
+### Functions
 ########################################################################################
 
-createTaskProcessor = (GTFSFiles, downloadDir) ->
+importGTFSFiles = (agency, GTFSFiles, downloadDir) ->
 
-	(task, cb) ->
+	logger.info "Importing GTFS files ..."
 
-		agency = { key: task.agency_key, url: task.agency_url }
-
-		agencyImporter.importAgency(agency, GTFSFiles, downloadDir)
-		.then((data) -> cb(data))
-		.fail((err) -> cb(err))
-
+	Q.all(
+		GTFSFiles.map (GTFSFile) ->
+			gtfsFileImporter.importGTFSFile(agency, GTFSFile, downloadDir)
+	)
 
 
 ########################################################################################
@@ -29,4 +27,4 @@ createTaskProcessor = (GTFSFiles, downloadDir) ->
 ########################################################################################
 
 module.exports =
-	createTaskProcessor: createTaskProcessor
+	importGTFSFiles: importGTFSFiles

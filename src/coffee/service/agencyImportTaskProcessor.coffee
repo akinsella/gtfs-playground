@@ -2,6 +2,7 @@
 ### Modules
 ########################################################################################
 
+_ = require 'underscore'
 config = require '../conf/config'
 logger = require '../log/logger'
 
@@ -16,7 +17,7 @@ createTaskProcessor = (GTFSFiles, downloadDir) ->
 
 	(task, cb) ->
 
-		agency = { key: task.agency_key, url: task.agency_url }
+		agency = _.extend({ bounds: { sw: [], ne: [] }}, task.agency)
 
 		agencyImporter.importAgency(agency, GTFSFiles, downloadDir)
 		.then((data) -> cb(data))

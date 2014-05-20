@@ -1,6 +1,8 @@
 ########################################################################################
 ### Modules
 ########################################################################################
+_ = require 'underscore'
+util = require 'util'
 
 config = require '../conf/config'
 logger = require '../log/logger'
@@ -22,20 +24,23 @@ importData = (agencyItems, GTFSFiles, downloadDir) ->
 	agencies = agencyItems.map(agencyFromItem)
 
 	agenciesImporter.importAgencies(agencies, GTFSFiles, downloadDir)
-
+	.then (result) ->
+		logger.info "GTFS files processed for agencies: '#{util.inspect(agencies)}'"
+	.fail (err) ->
+		logger.info "Got some errors processing GTFS files for agencies: '#{util.inspect(agencies)}' - Error message: #{err.message}"
 
 agencyFromItem = (item) ->
 	if typeof (item) is "string"
 		agency =
-			agency_key: item
-			agency_url: "http://www.gtfs-data-exchange.com/agency/#{item}/latest.zip"
+			key: item
+			url: "http://www.gtfs-data-exchange.com/agency/#{item}/latest.zip"
 	else
-		agency =
-			agency_key: item.agency_key
-			agency_url: item.url
+		agency = _.extend({}, item) #FIXME: Should copy object
 
-	if not agency.agency_key or not agency.agency_url
+	if not agency.key or not agency.url
 		throw new Error("No URL or Agency Key provided.")
+
+	agency
 
 
 

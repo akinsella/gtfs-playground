@@ -12,19 +12,19 @@ Agency = require '../model/agency'
 ### Functions
 ########################################################################################
 
-updateLastUpdateDate = (agencyKey) ->
-	query = { agency_key: agencyKey }
+updateLastUpdateDate = (agency) ->
+	query = { agency_key: agency.key }
 	updateData = { $set: { date_last_updated: Date.now() } }
 	Q.when(Agency.update(query, updateData).exec())
 
 
-updateAgencyCenter = (agencyKey, agencyBounds) ->
-	query = { agency_key: agencyKey }
+updateAgencyCenter = (agency) ->
+	query = { agency_key: agency.key }
 	updateData = { $set: {
-		agency_bounds: agencyBounds,
+		agency_bounds: agency.bounds,
 		agency_center: [
-				(agencyBounds.ne[0] - agencyBounds.sw[0]) / 2 + agencyBounds.sw[0]
-				(agencyBounds.ne[1] - agencyBounds.sw[1]) / 2 + agencyBounds.sw[1]
+			(agency.bounds.ne[0] - agency.bounds.sw[0]) / 2 + agency.bounds.sw[0]
+			(agency.bounds.ne[1] - agency.bounds.sw[1]) / 2 + agency.bounds.sw[1]
 		] }
 	}
 	Q.when(Agency.update(query, updateData).exec())

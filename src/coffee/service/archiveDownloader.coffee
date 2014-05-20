@@ -41,4 +41,4 @@ downloadArchive = (archiveURL, downloadDir) ->
 ########################################################################################
 
 module.exports =
-	downloadFiles: downloadArchive
+	downloadArchive: downloadArchive

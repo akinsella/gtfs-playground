@@ -2,27 +2,16 @@
 ### Modules
 ########################################################################################
 
-request = require 'request'
-exec = require('child_process').exec
-fs = require 'fs'
-path = require 'path'
-csv = require 'csv-streamify'
-async = require 'async'
 Q = require 'q'
-util = require 'util'
 mkdirp = require 'mkdirp'
 rimraf = require 'rimraf'
 
-mongo = require '../lib/mongo'
-config = require '../conf/config'
 logger = require '../log/logger'
 
 archiveDownloader = require './archiveDownloader'
 mongoCollectionsRemover = require './mongoCollectionsRemover'
 agencyService = require './agencyService'
 gtfsFilesImporter = require './gtfsFilesImporter'
-
-Agency = require '../model/agency'
 
 
 
@@ -32,14 +21,13 @@ Agency = require '../model/agency'
 
 importAgency = (agency, GTFSFiles, downloadDir) ->
 
-	agencyKey = agency.key
-	agencyBounds = { sw: [], ne: [] } # FIXME
+	logger.info "Starting '#{agency.key}' agency"
 
-	logger.info "Starting '#{agencyKey}' agency"
-
-	Q.nfCall(rimraf, downloadDir)
+	Q('import-gtfs-agency')
 	.then () ->
-		Q.nfCall(mkdirp, downloadDir)
+		removeDir(downloadDir)
+	.then () ->
+		createDir(downloadDir)
 	.then () ->
 		archiveDownloader.downloadArchive(agency.url, downloadDir)
 	.then () ->
@@ -50,29 +38,24 @@ importAgency = (agency, GTFSFiles, downloadDir) ->
 	.then () ->
 		gtfsFilesImporter.importGTFSFiles(agency, GTFSFiles, downloadDir)
 	.then () ->
-		logger.info "#{agencyKey}:  Post Processing data"
-		Q.nfCall(async.series, [ agencyCenter, longestTrip, updatedDate ])
-	.then () ->
-		agencyService.updateAgencyCenter(agency.key, agencyBounds)
-#	.then () ->
-#		longestTrip = (cb) ->
-#			###
-#				Trips.find({agencyKey: agencyKey}).for.toArray (e, trips) ->
-#					async.each trips, (trip, cb) ->
-#						mongo.client.collection('stoptimes', (e, collection) ->
-#
-#						logger.info(trip);
-#						cb()
-#			###
-#			cb()
+		agencyService.updateAgencyCenter(agency)
 	.then () ->
 		agencyService.updateLastUpdateDate(agency.key)
 	.then () ->
-		Q.nfCall(rimraf, downloadDir)
+		removeDir(downloadDir)
 	.then () ->
-		logger.info "#{agencyKey}: Completed"
+		logger.info "#{agency.key}: Completed"
 
 
+removeDir = (dir) ->
+	deferred = Q.defer()
+	rimraf dir, deferred.makeNodeResolver()
+	deferred.promise
+
+createDir = (dir) ->
+	deferred = Q.defer()
+	mkdirp dir, deferred.makeNodeResolver()
+	deferred.promise
 
 
 ########################################################################################

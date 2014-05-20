@@ -35,6 +35,9 @@ createTaskQueue = (deferred, taskProcessor, cb) ->
 
 	taskQueue = async.queue(taskProcessor, 1)
 
+	taskQueue.enqueueAgency = (agency) ->
+		taskQueue.push { agency: agency }
+
 	taskQueue.drain = cb
 
 	taskQueue

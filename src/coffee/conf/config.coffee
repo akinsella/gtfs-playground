@@ -44,7 +44,7 @@ if !config
 #				'golden-gate-ferry'
 #			]
 			agencies: [
-				{ agency_key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
+				{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
 			]
 		bokeh:
 			dealer: "tcp://127.0.0.1:8001"

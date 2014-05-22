@@ -5,7 +5,7 @@
 path = require 'path'
 fs = require 'fs'
 Q = require 'q'
-
+csv = require 'csv-streamify'
 bokeh  = require 'zmq-bokeh'
 
 logger = require '../log/logger'
@@ -49,6 +49,7 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 	filePath = path.join(downloadDir, "#{GTFSFile.fileNameBase}.txt")
 	if !fs.existsSync(filePath)
 		deferred.reject(new Error("File with path: '#{filePath}' does not exist"))
+		return
 
 	logger.info "#{agency.key}: '#{GTFSFile.fileNameBase}' Importing data"
 

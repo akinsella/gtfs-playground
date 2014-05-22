@@ -33,7 +33,7 @@ importAgency = (agency, GTFSFiles, downloadDir) ->
 	.then () ->
 		Q.all(
 			GTFSFiles.map (GTFSFile) ->
-				mongoCollectionsRemover.removeCollections(GTFSFile.collection, agency.key)
+				mongoCollectionsRemover.removeCollectionByModel(GTFSFile.collection, agency.key)
 		)
 	.then () ->
 		gtfsFilesImporter.importGTFSFiles(agency, GTFSFiles, downloadDir)

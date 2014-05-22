@@ -24,10 +24,7 @@ importData = (agencyItems, GTFSFiles, downloadDir) ->
 	agencies = agencyItems.map(agencyFromItem)
 
 	agenciesImporter.importAgencies(agencies, GTFSFiles, downloadDir)
-	.then (result) ->
-		logger.info "GTFS files processed for agencies: '#{util.inspect(agencies)}'"
-	.fail (err) ->
-		logger.info "Got some errors processing GTFS files for agencies: '#{util.inspect(agencies)}' - Error message: #{err.message}"
+
 
 agencyFromItem = (item) ->
 	if typeof (item) is "string"

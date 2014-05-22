@@ -43,8 +43,11 @@ if !config
 #				'bay-area-rapid-transit',
 #				'golden-gate-ferry'
 #			]
+#			agencies: [
+#				{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
+#			]
 			agencies: [
-				{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
+				{ key: 'Keolis', url: 'http://localhost/data/keolis-rennes_20101015_1538.zip' }
 			]
 		bokeh:
 			dealer: "tcp://127.0.0.1:8001"

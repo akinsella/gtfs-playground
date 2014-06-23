@@ -21,9 +21,7 @@ BokehTaskSubmitterStream = (client, taskQueue) ->
 util.inherits(BokehTaskSubmitterStream, stream.Writable)
 
 BokehTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
-	@client.submitTask @taskQueue, records, (err, data) ->
-		logger.info "[#{process.pid}] push.send ended"
-		cb(err, data)
+	@client.submitTask @taskQueue, records, cb
 
 
 

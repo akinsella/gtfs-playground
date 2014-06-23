@@ -29,13 +29,13 @@ loggerConfig =
 
 	transports:
 		console:
-			level: 'debug'
+			level: 'info'
 			colorize: true
 			timestamp: "YYYY-MM-DD HH:mm:ss.sss"
 		file:
 			dir: "#{config.logging.basePath}/logs"
 			filename: "logs.log"
-			level: 'debug'
+			level: 'info'
 			json: false
 			timestamp: "YYYY-MM-DD HH:mm:ss.sss"
 			maxsize: 1024 * 1024 * 10

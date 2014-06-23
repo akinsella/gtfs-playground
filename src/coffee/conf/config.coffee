@@ -43,12 +43,15 @@ if !config
 #				'bay-area-rapid-transit',
 #				'golden-gate-ferry'
 #			]
-#			agencies: [
-#				{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
-#			]
 			agencies: [
-				{ key: 'Keolis', url: 'http://localhost/data/keolis-rennes_20101015_1538.zip' }
+				{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
 			]
+#			agencies: [
+#				{ key: 'Keolis', url: 'http://localhost/data/keolis-rennes_20101015_1538.zip' }
+#			]
+		amqp:
+			hostname: "127.0.0.1"
+			port: "5672"
 		bokeh:
 			dealer: "tcp://127.0.0.1:8001"
 			router: "tcp://127.0.0.1:8002"
@@ -80,6 +83,7 @@ module.exports =
 	logging: config.logging
 	gtfs: config.gtfs
 	bokeh: config.bokeh
+	amqp: config.amqp
 
 
 

@@ -6,6 +6,7 @@ fs = require 'fs'
 request = require 'request'
 unzip = require 'unzip'
 Q = require 'q'
+moment = require 'moment'
 
 config = require '../conf/config'
 logger = require '../log/logger'
@@ -19,19 +20,26 @@ logger = require '../log/logger'
 downloadArchive = (archiveURL, downloadDir) ->
 	deferred = Q.defer()
 
-	logger.info "Downloading file with URL: '#{archiveURL}'"
-	processFile = (err, response, body) ->
-		if response and response.statusCode isnt 200
-			deferred.reject(new Error("Couldn't download files"))
-		else
-			logger.info "File with URL: '#{archiveURL}' downloaded"
-			fs.createReadStream("#{downloadDir}/latest.zip")
-			.pipe(unzip.Extract(path: downloadDir).on("close", deferred.makeNodeResolver()))
-			.on "error", (err) ->
-				logger.info "[ERROR][Name:#{err.name}] #{err.message}"
-				deferred.reject(err)
+	start = moment()
 
-	request(archiveURL, processFile).pipe(fs.createWriteStream("#{downloadDir}/latest.zip"))
+	logger.info "Downloading file with URL: '#{archiveURL}'"
+
+	request(archiveURL)
+	.on "end", () ->
+		duration = moment.duration(moment().diff(start)).asMilliseconds()
+		logger.info "Downloaded file ended in #{duration} ms"
+		start = moment()
+	.pipe(unzip.Extract(path: downloadDir))
+	.on "close", (err) ->
+		duration = moment.duration(moment().diff(start)).asMilliseconds()
+		logger.info "Unzip file ended in #{duration} ms"
+		if err
+			deferred.reject err
+		else
+			deferred.resolve()
+	.on "error", (err) ->
+		logger.info "[ERROR][Name:#{err.name}] #{err.message}"
+		deferred.reject(err)
 
 	deferred.promise
 

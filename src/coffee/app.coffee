@@ -3,6 +3,8 @@
 ########################################################################################
 start = new Date()
 
+heapdump = require 'heapdump'
+
 config = require './conf/config'
 logger = require './log/logger'
 

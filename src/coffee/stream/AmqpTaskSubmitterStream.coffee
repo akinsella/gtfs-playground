@@ -2,29 +2,32 @@
 ### Modules
 ########################################################################################
 
-logger = require 'winston'
+stream = require 'stream'
 util = require 'util'
 
+logger = require '../log/logger'
+
+amqp = require '../lib/amqp'
+
 ########################################################################################
-### Functions
+### Stream
 ########################################################################################
 
-middleware = () ->
-	(req, res, next) ->
-			logger.info  """---------------------------------------------------------
-							Http Request - Pid process: [#{process.pid}]
-							Http Request - Url: #{req.url}
-							Http Request - Query: #{util.inspect(req.query)}
-							Http Request - Method: #{req.method}
-							Http Request - Headers: #{util.inspect(req.headers)}
-							Http Request - Body: #{util.inspect(req.body)}
-							---------------------------------------------------------"""
+AmqpTaskSubmitterStream = (taskQueue) ->
+	stream.Writable.call(this, { objectMode : true })
+	@amqpClient = amqp.createClient("TASK_SUBMITTER")
+	@taskQueue = taskQueue
 
-			next()
+util.inherits(AmqpTaskSubmitterStream, stream.Writable)
+
+AmqpTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
+#	logger.info "AmqpTaskSubmitterStream: #{records.length}"
+	@amqpClient.publishJSON @taskQueue, records, cb
+
 
 
 ########################################################################################
 ### Exports
 ########################################################################################
 
-module.exports = middleware
+module.exports = AmqpTaskSubmitterStream

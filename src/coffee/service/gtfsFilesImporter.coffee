@@ -2,7 +2,7 @@
 ### Modules
 ########################################################################################
 
-Q = require 'q'
+Promise = require 'bluebird'
 
 logger = require '../log/logger'
 
@@ -16,7 +16,7 @@ importGTFSFiles = (agency, GTFSFiles, downloadDir) ->
 
 	logger.info "Importing GTFS files ..."
 
-	Q.all(
+	Promise.all(
 		GTFSFiles.map (GTFSFile) ->
 			gtfsFileImporter.importGTFSFile(agency, GTFSFile, downloadDir)
 	)

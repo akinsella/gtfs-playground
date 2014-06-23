@@ -5,7 +5,7 @@
 fs = require 'fs'
 request = require 'request'
 unzip = require 'unzip'
-Q = require 'q'
+Promise = require 'bluebird'
 moment = require 'moment'
 
 config = require '../conf/config'
@@ -18,7 +18,7 @@ logger = require '../log/logger'
 ########################################################################################
 
 downloadArchive = (archiveURL, downloadDir) ->
-	deferred = Q.defer()
+	deferred = Promise.pending()
 
 	start = moment()
 
@@ -36,7 +36,7 @@ downloadArchive = (archiveURL, downloadDir) ->
 		if err
 			deferred.reject err
 		else
-			deferred.resolve()
+			deferred.fulfill()
 	.on "error", (err) ->
 		logger.info "[ERROR][Name:#{err.name}] #{err.message}"
 		deferred.reject(err)

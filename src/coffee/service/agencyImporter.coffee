@@ -2,9 +2,9 @@
 ### Modules
 ########################################################################################
 
-Q = require 'q'
-mkdirp = require 'mkdirp'
-rimraf = require 'rimraf'
+Promise = require 'bluebird'
+mkdirp = Promise.promisify(require('mkdirp'))
+rimraf = Promise.promisify(require('rimraf'))
 
 logger = require '../log/logger'
 
@@ -23,15 +23,15 @@ importAgency = (agency, GTFSFiles, downloadDir) ->
 
 	logger.info "Starting '#{agency.key}' agency"
 
-	Q('import-gtfs-agency')
+	Promise.cast('import-gtfs-agency')
 	.then () ->
-		removeDir(downloadDir)
+		rimraf(downloadDir)
 	.then () ->
-		createDir(downloadDir)
+		mkdirp(downloadDir)
 	.then () ->
 		archiveDownloader.downloadArchive(agency.url, downloadDir)
 	.then () ->
-		Q.all(
+		Promise.all(
 			GTFSFiles.map (GTFSFile) ->
 				mongoCollectionsRemover.removeCollectionByModel(GTFSFile.collection, agency.key)
 		)
@@ -42,20 +42,10 @@ importAgency = (agency, GTFSFiles, downloadDir) ->
 	.then () ->
 		agencyService.updateLastUpdateDate(agency.key)
 	.then () ->
-		removeDir(downloadDir)
+		rimraf(downloadDir)
 	.then () ->
 		logger.info "#{agency.key}: Completed"
 
-
-removeDir = (dir) ->
-	deferred = Q.defer()
-	rimraf dir, deferred.makeNodeResolver()
-	deferred.promise
-
-createDir = (dir) ->
-	deferred = Q.defer()
-	mkdirp dir, deferred.makeNodeResolver()
-	deferred.promise
 
 
 ########################################################################################

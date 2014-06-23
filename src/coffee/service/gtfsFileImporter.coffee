@@ -4,7 +4,7 @@
 
 path = require 'path'
 fs = require 'fs'
-Q = require 'q'
+Promise = require 'bluebird'
 csv = require 'csv-streamify'
 split = require 'split'
 
@@ -47,7 +47,7 @@ amqpClient.subscribeQueue "ProcessRecord", new GtfsRecordsImportTask()
 
 importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
-	deferred = Q.defer()
+	deferred = Promise.pending()
 
 	logger.info "Importing GTFS file: '#{GTFSFile.fileNameBase}' ..."
 
@@ -70,7 +70,8 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 		if err
 			deferred.reject(err)
 		else
-			deferred.resolve(data)
+			deferred.fulfill(data)
+
 	fsStream
 	.pipe(csvStream)
 	.pipe(cl2oStream)

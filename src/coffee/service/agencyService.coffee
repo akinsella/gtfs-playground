@@ -2,9 +2,9 @@
 ### Modules
 ########################################################################################
 
-Q = require 'q'
+Promise = require 'bluebird'
 
-Agency = require '../model/agency'
+Agency = Promise.promisifyAll(require('../model/agency'))
 
 
 
@@ -15,7 +15,7 @@ Agency = require '../model/agency'
 updateLastUpdateDate = (agency) ->
 	query = { agency_key: agency.key }
 	updateData = { $set: { date_last_updated: Date.now() } }
-	Q.when(Agency.update(query, updateData).exec())
+	Agency.update(query, updateData)
 
 
 updateAgencyCenter = (agency) ->
@@ -27,7 +27,7 @@ updateAgencyCenter = (agency) ->
 			(agency.bounds.ne[1] - agency.bounds.sw[1]) / 2 + agency.bounds.sw[1]
 		] }
 	}
-	Q.when(Agency.update(query, updateData).exec())
+	Agency.update(query, updateData)
 
 
 

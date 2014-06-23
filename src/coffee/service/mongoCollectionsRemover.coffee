@@ -2,8 +2,7 @@
 ### Modules
 ########################################################################################
 
-Q = require 'q'
-
+Promise = require 'bluebird'
 logger = require '../log/logger'
 
 
@@ -15,7 +14,7 @@ logger = require '../log/logger'
 removeCollectionByModel = (model, agencyKey) ->
 
 	logger.info "Removing database collection: '#{model.modelName}' ..."
-	Q.when(model.remove({ agency_key: agencyKey }).exec())
+	Promise.promisify(model.remove)({ agency_key: agencyKey })
 
 
 ########################################################################################

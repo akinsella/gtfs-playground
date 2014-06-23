@@ -2,8 +2,6 @@
 ### Modules
 ########################################################################################
 
-Q = require 'q'
-
 logger = require '../log/logger'
 gtfsRecordImporter = require './gtfsRecordImporter'
 

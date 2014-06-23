@@ -1,3 +1,5 @@
+agent = require 'webkit-devtools-agent'
+#heapdump = require 'heapdump'
 fs = require 'fs'
 csv = require 'csv-streamify'
 logger = require './log/logger'
@@ -27,4 +29,5 @@ fsStream
 	logger.info "[#{GTFSFile.fileNameBase}][#{lineIndex}] Processed data" if lineIndex % 100000 == 0
 .pipe(batchStream)
 .pipe(JSONStream.stringify(false))
-.pipe(devnull())
+.pipe(amqpTaskSubmitterStream)
+#.pipe(devnull())

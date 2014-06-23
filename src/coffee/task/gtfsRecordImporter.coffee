@@ -2,7 +2,7 @@
 ### Modules
 ########################################################################################
 
-Q = require 'q'
+Promise = require 'bluebird'
 
 logger = require '../log/logger'
 
@@ -69,7 +69,7 @@ importLines = (jsonMessages) ->
 
 	model = jsonMessages[0].model
 
-	Q.when(models[model].create(lines))
+	Promise.promisify(models[model].create)(lines)
 
 
 

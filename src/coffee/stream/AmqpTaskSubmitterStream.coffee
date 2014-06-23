@@ -25,7 +25,6 @@ AmqpTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
 	@amqpClient.publishJSON @taskQueue, records, cb
 
 
-
 ########################################################################################
 ### Exports
 ########################################################################################

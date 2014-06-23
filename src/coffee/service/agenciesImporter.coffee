@@ -4,7 +4,7 @@
 ########################################################################################
 
 async = require 'async'
-Q = require 'q'
+Promise = require 'bluebird'
 
 config = require '../conf/config'
 logger = require '../log/logger'
@@ -19,11 +19,11 @@ agencyImportTaskProcessor = require './agencyImportTaskProcessor'
 
 importAgencies = (agencies, GTFSFiles, downloadDir) ->
 
-	deferred = Q.defer()
+	deferred = Promise.pending()
 
 	taskProcessor = agencyImportTaskProcessor.createTaskProcessor(GTFSFiles, downloadDir)
 
-	taskQueue = createTaskQueue deferred, taskProcessor, deferred.makeNodeResolver()
+	taskQueue = Promise.promisify(createTaskQueue)(deferred, taskProcessor)
 
 	agencies.forEach (agency) ->
 		taskQueue.enqueueAgency(agency)

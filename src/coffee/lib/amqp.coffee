@@ -5,7 +5,7 @@
 amqp = require 'amqp'
 uuid = require 'uuid'
 os = require 'os'
-Q = require 'q'
+Promise = require 'bluebird'
 
 logger = require '../log/logger'
 config = require '../conf/config'
@@ -15,9 +15,9 @@ config = require '../conf/config'
 # Redis initialization
 ###########################################################
 
-createClient = (name, callback) ->
+createClient = (name) ->
 
-	amqpClientDeferred = Q.defer()
+	amqpClientDeferred = Promise.pending()
 
 	amqpClient = amqp.createConnection(
 		{ host: config.amqp.hostname, port: config.amqp.port, clientProperties: { applicationName: config.appname, capabilities: { consumer_cancel_notify: true } } },
@@ -25,7 +25,7 @@ createClient = (name, callback) ->
 	)
 
 	amqpClient.on 'ready', () ->
-		amqpClientDeferred.resolve(amqpClient)
+		amqpClientDeferred.fulfill()
 
 	amqpClient.on 'error', (err) ->
 		logger.info("[AMQP] Error message: #{err.message}")
@@ -34,13 +34,17 @@ createClient = (name, callback) ->
 
 
 	amqpClient.publishJSON = (channel, message, callback) ->
-		logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}] #{JSON.stringify(message, undefined, 2)}"
+		#logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}] #{JSON.stringify(message, undefined, 2)}"
 		#logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}]"
 
-		amqpClientReady.then (amqpClient) ->
-			amqpClient.exchange channel, { type: "direct", confirm: true }, (exchange) ->
-				exchange.publish channel, JSON.stringify(message), { ### Options ### }, (err, data) ->
-					callback(err, data)
+		publish = () ->
+			amqpClient.exchange channel, { type: "direct", confirm: false }, (exchange) ->
+				exchange.publish channel, JSON.stringify(message), { ### Options ### }, callback
+
+		if amqpClient.readyEmitted
+			publish()
+		else
+			amqpClientReady.then publish
 
 
 	amqpClient.subscribeTopic = (channel, channelHandler) ->

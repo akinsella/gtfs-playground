@@ -63,9 +63,9 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
 	lineIndex = 0
 
-	cl2oStream = new CsvLineToObjectStream( GTFSFile, agency.key,  { sw: [], ne: [] })
-	batchStream = new BatchStream({ size : 1000 })
-	amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord")
+	cl2oStream = new CsvLineToObjectStream( GTFSFile, agency.key,  { sw: [], ne: [] }, { highWaterMark: 16 })
+	batchStream = new BatchStream({ size : 1000, highWaterMark: 16 })
+	amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 16 })
 	amqpTaskSubmitterStream.on 'finish', (err, data) ->
 		if err
 			deferred.reject(err)

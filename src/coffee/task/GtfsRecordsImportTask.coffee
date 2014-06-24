@@ -30,7 +30,7 @@ class GtfsRecordsImportTask
 			if callback
 				callback undefined, inserted.length
 
-		.fail (err) ->
+		.catch (err) ->
 			console.log "[#{process.pid}][#{agency_key}][#{model}][#{index}] Error: #{err.message}"
 			if callback
 				callback err

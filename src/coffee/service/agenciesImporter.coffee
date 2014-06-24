@@ -23,7 +23,11 @@ importAgencies = (agencies, GTFSFiles, downloadDir) ->
 
 	taskProcessor = agencyImportTaskProcessor.createTaskProcessor(GTFSFiles, downloadDir)
 
-	taskQueue = Promise.promisify(createTaskQueue)(deferred, taskProcessor)
+	taskQueue = createTaskQueue deferred, taskProcessor, (err, result) ->
+		if err
+			deferred.reject err
+		else
+			deferred.fulfill result
 
 	agencies.forEach (agency) ->
 		taskQueue.enqueueAgency(agency)

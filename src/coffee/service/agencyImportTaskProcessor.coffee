@@ -21,7 +21,7 @@ createTaskProcessor = (GTFSFiles, downloadDir) ->
 
 		agencyImporter.importAgency(agency, GTFSFiles, downloadDir)
 		.then((data) -> cb(data))
-		.fail((err) -> cb(err))
+		.catch((err) -> cb(err))
 
 
 

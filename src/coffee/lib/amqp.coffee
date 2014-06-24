@@ -29,6 +29,7 @@ createClient = (name) ->
 
 	amqpClient.on 'error', (err) ->
 		logger.info("[AMQP] Error message: #{err.message}")
+		logger.info("[AMQP] Error message: #{err.stack}")
 
 	amqpClientReady = amqpClientDeferred.promise
 
@@ -55,7 +56,7 @@ createClient = (name) ->
 		queueName = "#{channel}_#{os.hostname().toUpperCase().replace(/[.-]/g, "_")}_#{uuid.v4().toUpperCase().replace(/[-]/g, "_")}"
 		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
 		amqpClientReady.then (amqpClient) ->
-			amqpClient.exchange channel, { type: "direct" }, (exchange) ->
+			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
 				queue = amqpClient.queue queueName, {### Options ###}, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message) ->
@@ -65,12 +66,18 @@ createClient = (name) ->
 	amqpClient.subscribeQueue = (channel, channelHandler) ->
 		queueName = "#{channel}_#{os.hostname().toUpperCase().replace(/[.-]/g, "_")}"
 		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
-		amqpClientReady.then (amqpClient) ->
-			amqpClient.exchange channel, { type: "direct" }, (exchange) ->
+
+		subscribeQueue = () ->
+			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
 				queue = amqpClient.queue queueName, {### Options ###}, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message) ->
 						channelHandler.handleMessage channel, JSON.parse(message.data.toString())
+
+		if amqpClient.readyEmitted
+			subscribeQueue()
+		else
+			amqpClientReady.then subscribeQueue
 
 	amqpClient
 

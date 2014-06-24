@@ -23,26 +23,27 @@ importAgencies = (agencies, GTFSFiles, downloadDir) ->
 
 	taskProcessor = agencyImportTaskProcessor.createTaskProcessor(GTFSFiles, downloadDir)
 
-	taskQueue = createTaskQueue deferred, taskProcessor, (err, result) ->
+	taskQueue = createTaskQueue deferred, taskProcessor, () ->
+		deferred.fulfill()
+	, (err) ->
 		if err
 			deferred.reject err
-		else
-			deferred.fulfill result
 
 	agencies.forEach (agency) ->
-		taskQueue.enqueueAgency(agency)
+		if deferred.promise.isPending()
+			taskQueue.enqueueAgency(agency)
 
 	deferred.promise
 
 
-createTaskQueue = (deferred, taskProcessor, cb) ->
+createTaskQueue = (deferred, taskProcessor, drainCb, pushCb) ->
 
 	taskQueue = async.queue(taskProcessor, 1)
 
 	taskQueue.enqueueAgency = (agency) ->
-		taskQueue.push { agency: agency }
+		taskQueue.push { agency: agency }, pushCb
 
-	taskQueue.drain = cb
+	taskQueue.drain = drainCb
 
 	taskQueue
 

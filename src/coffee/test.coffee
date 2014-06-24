@@ -1,5 +1,5 @@
-agent = require 'webkit-devtools-agent'
-#heapdump = require 'heapdump'
+#agent = require 'webkit-devtools-agent'
+heapdump = require 'heapdump'
 fs = require 'fs'
 csv = require 'csv-streamify'
 logger = require './log/logger'
@@ -12,14 +12,14 @@ StopTime = require './model/stopTime'
 JSONStream = require 'JSONStream'
 fsStream = fs.createReadStream("/Users/akinsella/Workspace/Projects/gtfs-playground/downloads/stop_times.txt")
 csvStream = csv({ objectMode: true, newline:'\r\n' })
-batchStream = new BatchStream({ size : 1000 })
+batchStream = new BatchStream({ size : 1000, highWaterMark: 16 })
 
 GTFSFile = { fileNameBase: "stop_times", collection: StopTime }
 agency = { key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
 
 lineIndex = 0
 
-amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord")
+amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 16 })
 
 
 fsStream

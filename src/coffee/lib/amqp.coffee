@@ -38,8 +38,12 @@ createClient = (name) ->
 		#logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}]"
 
 		publish = () ->
-			amqpClient.exchange channel, { type: "direct", confirm: false }, (exchange) ->
-				exchange.publish channel, JSON.stringify(message), { ### Options ### }, callback
+			amqpClient.queue channel, { }, (queue) ->
+				amqpClient.exchange channel, { type: 'fanout', confirm: true }, (exchange) ->
+					queue.bind exchange, channel, (data) ->
+						exchange.publish channel, message, { }, (err, data) ->
+							callback(err, data)
+
 
 		if amqpClient.readyEmitted
 			publish()

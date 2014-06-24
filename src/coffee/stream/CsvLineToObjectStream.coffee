@@ -13,8 +13,16 @@ logger = require '../log/logger'
 ### Stream
 ########################################################################################
 
-CsvLineToObjectStream = (GTFSFile, agency_key, agency_bounds) ->
-	stream.Transform.call(this, { objectMode : true })
+CsvLineToObjectStream = (GTFSFile, agency_key, agency_bounds, options) ->
+	options or options = {}
+
+	transformOptions =
+		objectMode: true
+
+	if options.highWaterMark
+		transformOptions.highWaterMark = options.highWaterMark
+
+	stream.Transform.call(this, transformOptions)
 	@GTFSFile = GTFSFile
 	@agency_key = agency_key
 	@agency_bounds = agency_bounds

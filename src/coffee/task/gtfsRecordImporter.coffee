@@ -69,7 +69,7 @@ importLines = (jsonMessages) ->
 
 	model = jsonMessages[0].model
 
-	Promise.promisify(models[model].create)(lines)
+	Promise.promisify(models[model].create, models[model])(lines)
 
 
 

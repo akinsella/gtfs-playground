@@ -50,7 +50,7 @@ importData = (req, res) ->
 	.then (agencyCount) ->
 		logger.info "[GTFS][IMPORT] Imported #{agencyCount} agencies data"
 	.catch (err) ->
-		logger.info "[GTFS][IMPORT] Failed with error: #{err.message}"
+		logger.info "[GTFS][IMPORT] Failed with error: #{err.message} - #{err.stack}"
 		res.send 500, err.message
 
 

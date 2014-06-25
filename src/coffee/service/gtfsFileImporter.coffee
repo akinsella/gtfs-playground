@@ -53,40 +53,40 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
 	filePath = path.join(downloadDir, "#{GTFSFile.fileNameBase}.txt")
 	if !fs.existsSync(filePath)
-		deferred.reject(new Error("File with path: '#{filePath}' does not exist"))
-		return
+		logger.info "File with path: '#{filePath}' does not exist"
+		deferred.fulfill()
+	else
+		logger.info "#{agency.key}: '#{GTFSFile.fileNameBase}' Importing data"
 
-	logger.info "#{agency.key}: '#{GTFSFile.fileNameBase}' Importing data"
+		fsStream = fs.createReadStream(filePath)
+		csvStream = csv({ objectMode: true, newline:'\r\n', ###highWaterMark: 1### })
 
-	fsStream = fs.createReadStream(filePath)
-	csvStream = csv({ objectMode: true, newline:'\r\n' })
+		lineIndex = 0
 
-	lineIndex = 0
+		cl2oStream = new CsvLineToObjectStream( GTFSFile, agency.key,  { sw: [], ne: [] }, { ###highWaterMark: 1### })
+		batchStream = new BatchStream({ size : 10, highWaterMark: 10000 })
+		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 100 })
+		amqpTaskSubmitterStream.on 'finish', (err, data) ->
+			if err
+				deferred.reject(err)
+			else
+				deferred.fulfill(data)
 
-	cl2oStream = new CsvLineToObjectStream( GTFSFile, agency.key,  { sw: [], ne: [] }, { highWaterMark: 16 })
-	batchStream = new BatchStream({ size : 1000, highWaterMark: 16 })
-	amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 16 })
-	amqpTaskSubmitterStream.on 'finish', (err, data) ->
-		if err
-			deferred.reject(err)
-		else
-			deferred.fulfill(data)
-
-	fsStream
-	.pipe(csvStream)
-	.pipe(cl2oStream)
-	.on 'data', (data) ->
-		lineIndex++
-		logger.info "[#{GTFSFile.fileNameBase}][#{lineIndex}] Processed data" if lineIndex % 100000 == 0
-	.pipe(batchStream)
-	.pipe(amqpTaskSubmitterStream)
-#	fsStream.pipe(csvStream).pipe(cl2oStream).pipe(batchStream).pipe(amqpTaskSubmitterStream)
+		fsStream
+		.pipe(csvStream)
+		.pipe(cl2oStream)
+		.on 'data', (data) ->
+			lineIndex++
+			logger.info "[#{GTFSFile.fileNameBase}][#{lineIndex}] Processed data" if lineIndex % 10000 == 0
+		.pipe(batchStream)
+		.pipe(amqpTaskSubmitterStream)
+	#	fsStream.pipe(csvStream).pipe(cl2oStream).pipe(batchStream).pipe(amqpTaskSubmitterStream)
 
 
-#	bokehTaskSubmitterStream = new BokehTaskSubmitterStream(client, "ProcessRecord")
-#	bokehTaskSubmitterStream.on 'end', deferred.makeNodeResolver()
+	#	bokehTaskSubmitterStream = new BokehTaskSubmitterStream(client, "ProcessRecord")
+	#	bokehTaskSubmitterStream.on 'end', deferred.makeNodeResolver()
 
-#	fsStream.pipe(csvStream).pipe(cl2oStream).pipe(batchStream).pipe(bokehTaskSubmitterStream)
+	#	fsStream.pipe(csvStream).pipe(cl2oStream).pipe(batchStream).pipe(bokehTaskSubmitterStream)
 
 	deferred.promise
 

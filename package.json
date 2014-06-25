@@ -104,7 +104,9 @@
     "grunt-shell": "0.6.1",
     "grunt-contrib-sass": "0.6.0",
     "grunt-notify": "0.2.17",
-    "path-extra": "~0.2.0"
+    "path-extra": "~0.2.0",
+    "grunt-ssh": "~0.11.2",
+    "grunt-contrib-compress": "~0.9.1"
   },
   "scripts": {
     "prepublish": "npm prune",

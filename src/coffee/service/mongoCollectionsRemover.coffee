@@ -14,7 +14,7 @@ logger = require '../log/logger'
 removeCollectionByModel = (model, agencyKey) ->
 
 	logger.info "Removing database collection: '#{model.modelName}' ..."
-	Promise.promisify(model.remove)({ agency_key: agencyKey })
+	Promise.promisify(model.remove, model)({ agency_key: agencyKey })
 
 
 ########################################################################################

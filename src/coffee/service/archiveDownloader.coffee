@@ -31,6 +31,7 @@ downloadArchive = (archiveURL, downloadDir) ->
 		start = moment()
 	.pipe(unzip.Extract(path: downloadDir))
 	.on "close", (err) ->
+		logger.info "Extracted download to directory: '#{downloadDir}'"
 		duration = moment.duration(moment().diff(start)).asMilliseconds()
 		logger.info "Unzip file ended in #{duration} ms"
 		if err

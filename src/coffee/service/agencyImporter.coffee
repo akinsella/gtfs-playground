@@ -30,11 +30,11 @@ importAgency = (agency, GTFSFiles, downloadDir) ->
 		mkdirp(downloadDir)
 	.then () ->
 		archiveDownloader.downloadArchive(agency.url, downloadDir)
-	.then () ->
-		Promise.all(
-			GTFSFiles.map (GTFSFile) ->
-				mongoCollectionsRemover.removeCollectionByModel(GTFSFile.collection, agency.key)
-		)
+#	.then () ->
+#		Promise.all(
+#			GTFSFiles.map (GTFSFile) ->
+#				mongoCollectionsRemover.removeCollectionByModel(GTFSFile.collection, agency.key)
+#		)
 	.then () ->
 		gtfsFilesImporter.importGTFSFiles(agency, GTFSFiles, downloadDir)
 	.then () ->

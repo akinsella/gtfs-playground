@@ -2,9 +2,11 @@
 # Modules
 ####################################################################
 
+os = require 'os'
+util = require 'util'
+
 amqp = require 'amqp'
 uuid = require 'uuid'
-os = require 'os'
 Promise = require 'bluebird'
 
 logger = require '../log/logger'
@@ -40,11 +42,14 @@ createClient = (name) ->
 
 		publish = () ->
 			amqpClient.queue channel, { }, (queue) ->
-				amqpClient.exchange channel, { type: 'fanout', confirm: true }, (exchange) ->
+				exchangeOpts = { type: 'fanout', confirm: true }
+				amqpClient.exchange channel, exchangeOpts, (exchange) ->
 					queue.bind exchange, channel, (data) ->
 						exchange.publish channel, message, { }, (err, data) ->
-							callback(err, data)
-
+							if exchangeOpts.confirm
+								callback(err, data)
+						if !exchangeOpts.confirm
+							callback()
 
 		if amqpClient.readyEmitted
 			publish()
@@ -57,22 +62,22 @@ createClient = (name) ->
 		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
 		amqpClientReady.then (amqpClient) ->
 			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
-				queue = amqpClient.queue queueName, {### Options ###}, (queue) ->
+				queue = amqpClient.queue queueName, { ### Options ### }, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message) ->
-						channelHandler.handleMessage channel, JSON.parse(message.data.toString())
+						channelHandler.handleMessage channel, message
 
 
 	amqpClient.subscribeQueue = (channel, channelHandler) ->
-		queueName = "#{channel}_#{os.hostname().toUpperCase().replace(/[.-]/g, "_")}"
+		queueName = "#{channel}"
 		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
 
 		subscribeQueue = () ->
 			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
-				queue = amqpClient.queue queueName, {### Options ###}, (queue) ->
+				queue = amqpClient.queue queueName, { ### Options ### }, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message) ->
-						channelHandler.handleMessage channel, JSON.parse(message.data.toString())
+						channelHandler.handleMessage channel, message
 
 		if amqpClient.readyEmitted
 			subscribeQueue()

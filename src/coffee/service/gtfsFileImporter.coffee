@@ -57,15 +57,33 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 		deferred.fulfill()
 	else
 		logger.info "#{agency.key}: '#{GTFSFile.fileNameBase}' Importing data"
+		csvLinesRead = 0
+		c2loLinesRead = 0
+		batchRead = 0
+		amqpRead = 0
 
 		fsStream = fs.createReadStream(filePath)
-		csvStream = csv({ objectMode: true, newline:'\r\n', ###highWaterMark: 1### })
+		csvStream = csv({ objectMode: true, newline: '\r\n', highWaterMark: 10000 })
+		csvStream.on 'data', () ->
+			csvLinesRead++
+			logger.info "[CSV][#{GTFSFile.fileNameBase}][#{csvLinesRead}] CSV lines read: #{csvLinesRead}" if csvLinesRead % 1000 == 0
 
-		lineIndex = 0
-
-		cl2oStream = new CsvLineToObjectStream( GTFSFile, agency.key,  { sw: [], ne: [] }, { ###highWaterMark: 1### })
-		batchStream = new BatchStream({ size : 10, highWaterMark: 10000 })
-		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 100 })
+		cl2oStream = new CsvLineToObjectStream(GTFSFile, agency.key, { sw: [], ne: [] }, { highWaterMark: 8000 })
+		cl2oStream.on 'data', () ->
+			c2loLinesRead++
+			logger.info "[C2LO][#{GTFSFile.fileNameBase}][#{c2loLinesRead}] CL2O processed: #{c2loLinesRead}" if c2loLinesRead % 1000 == 0
+		batchStream = new BatchStream({ size : 2000, highWaterMark: 20 })
+		batchStream.on 'data', () ->
+			batchRead++
+			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{batchRead}] Batch processed: #{batchRead}" if batchRead % 100 == 0
+		batchStream.on 'drain', (err, data) ->
+			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{amqpRead}] drain"
+		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 18 })
+		amqpTaskSubmitterStream.on 'data', () ->
+			amqpRead++
+			logger.info "[AMQP][#{GTFSFile.fileNameBase}][#{amqpRead}] AMQP reads: #{amqpRead}" if amqpRead % 1000 == 0
+		amqpTaskSubmitterStream.on 'drain', (err, data) ->
+			logger.info "[AMQP][#{GTFSFile.fileNameBase}][#{amqpRead}] drain"
 		amqpTaskSubmitterStream.on 'finish', (err, data) ->
 			if err
 				deferred.reject(err)
@@ -75,9 +93,6 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 		fsStream
 		.pipe(csvStream)
 		.pipe(cl2oStream)
-		.on 'data', (data) ->
-			lineIndex++
-			logger.info "[#{GTFSFile.fileNameBase}][#{lineIndex}] Processed data" if lineIndex % 10000 == 0
 		.pipe(batchStream)
 		.pipe(amqpTaskSubmitterStream)
 	#	fsStream.pipe(csvStream).pipe(cl2oStream).pipe(batchStream).pipe(amqpTaskSubmitterStream)

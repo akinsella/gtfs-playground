@@ -33,8 +33,6 @@ util.inherits(CsvLineToObjectStream, stream.Transform)
 CsvLineToObjectStream.prototype._transform = (chunk, encoding, callback) ->
 	@index++
 
-	logger.info "Index: #{@index}"  if @index % 10000 == 0
-
 	this.push(
 		model: @GTFSFile.collection.modelName
 		index: @index

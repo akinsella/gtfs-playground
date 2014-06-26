@@ -32,7 +32,7 @@ class GtfsRecordsImportTask
 
 			gtfsRecordImporter.importLines(messages)
 			.then (inserted) ->
-				logger.info "[#{process.pid}][#{agency_key}][#{model}][#{index}] #{messages.length} lines inserted / Total: #{count}" if count % 10000 == 0
+				logger.info "[MONGO][#{process.pid}][#{agency_key}][#{model}][#{index}] Total lines inserted: #{count}" if Math.floor(count/10) % 100 == 0
 				if callback
 					callback undefined, inserted.length
 

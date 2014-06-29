@@ -25,6 +25,7 @@ AmqpTaskSubmitterStream = (taskQueue, options) ->
 
 	stream.Writable.call(this, writeOptions)
 
+	@firstLine = options.firstLine
 	@model = options.model
 	@agency = options.agency
 	@amqpClient = amqp.createClient("TASK_SUBMITTER")
@@ -34,16 +35,11 @@ util.inherits(AmqpTaskSubmitterStream, stream.Writable)
 
 AmqpTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
 
-	records = records.reduce (previousValue, currentValue, index, array) ->
-		previousValue + currentValue + '\n'
-	, ''
+	firstLine = @firstLine()
+	if records && firstLine != records[0]
+		records.unshift(firstLine)
 
-#	logger.info "Creating Buffer for string with length: #{records.length}"
-
-	buffer = new Buffer(records.length)
-	buffer.write(records)
-
-	@amqpClient.publishText "#{@agency.key}.#{@model}", records, cb
+	@amqpClient.publishText "#{@model}", { agency: { key: @agency.key }, records: records }, cb
 
 
 ########################################################################################

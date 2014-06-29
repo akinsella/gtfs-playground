@@ -29,9 +29,8 @@ AmqpTaskSubmitterStream = require '../stream/AmqpTaskSubmitterStream'
 
 amqpClient = amqp.createClient "GTFS_FILE_IMPORTER"
 
-for agency in gtfs.agencies
-	for gtfsFile in gtfs.files
-		amqpClient.subscribeQueue "#{agency.key}.#{gtfsFile.fileNameBase}", new GtfsRecordsImportTask(agency, gtfsFile.fileNameBase)
+for gtfsFile in gtfs.files
+	amqpClient.subscribeQueue "#{gtfsFile.fileNameBase}", new GtfsRecordsImportTask(gtfsFile.fileNameBase)
 
 
 
@@ -41,6 +40,8 @@ for agency in gtfs.agencies
 
 
 importGTFSFile = (agency, GTFSFile, downloadDir) ->
+
+	firstLine = ''
 
 	deferred = Promise.pending()
 
@@ -58,7 +59,9 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
 		splitRead = 0
 		splitStream = split()
-		splitStream.on 'data', () ->
+		splitStream.on 'data', (line) ->
+			if splitRead == 0
+				firstLine = line
 			splitRead++
 			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{splitRead}] Batch processed: #{splitRead}" if splitRead % 100000 == 0
 		splitStream.on 'drain', () ->
@@ -75,7 +78,7 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
 
 		amqpRead = 0
-		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 50, agency: agency, model: GTFSFile.fileNameBase })
+		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 50, agency: agency, model: GTFSFile.fileNameBase, firstLine: () -> if batchRead == 0 then undefined else firstLine })
 		amqpTaskSubmitterStream.on 'data', () ->
 			amqpRead++
 			logger.info "[AMQP][#{GTFSFile.fileNameBase}][#{amqpRead}] AMQP reads: #{amqpRead}" if amqpRead % 100000 == 0

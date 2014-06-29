@@ -29,42 +29,31 @@ class StringStream extends Stream.Readable
 ########################################################################################
 
 importLines = (agency, model, records) ->
-
 	deferred = Promise.defer()
 
-	model = gtfs.models[model]
+	mmodel = gtfs.models[model]
 
-	recordsStream = new StringStream(records)
+	#	agencyKey = agency.key
+	#	agencyBounds = agency.bounds
 
-	csvStream = csv({ objectMode: true, newline:'\n' })
+#	records.line.forEach (record) ->
+#		record.agency_key = agency.key
+#		if record.stop_sequence
+#			record.stop_sequence = parseInt(record.stop_sequence, 10)
+#		if record.direction_id
+#			record.direction_id = parseInt(record.direction_id, 10)
 
-	cl2oStream = new CsvLineToObjectStream( model, agency.key, { sw: [], ne: [] })
+#		if record.stop_lat and record.stop_lon
+#			record.loc = [ parseFloat(record.stop_lon), parseFloat(record.stop_lat) ]
+#			agencyBounds.sw[0] = record.loc[0]  if agencyBounds.sw[0] > record.loc[0] or not agencyBounds.sw[0]
+#			agencyBounds.ne[0] = record.loc[0]  if agencyBounds.ne[0] < record.loc[0] or not agencyBounds.ne[0]
+#			agencyBounds.sw[1] = record.loc[1]  if agencyBounds.sw[1] > record.loc[1] or not agencyBounds.sw[1]
+#			agencyBounds.ne[1] = record.loc[1]  if agencyBounds.ne[1] < record.loc[1] or not agencyBounds.ne[1]
 
-	recordsStream
-	.pipe(csvStream)
-	.pipe(cl2oStream)
-	.on 'data', (message) ->
+	mrecords = records.line.map (record) ->
+		new mmodel(record)
 
-		agencyKey = agency.key
-		agencyBounds = agency.bounds
-
-		line = message.line
-
-		for key of line
-			delete line[key]  if line[key] is null
-
-		line.agency_key = agencyKey
-		line.stop_sequence = parseInt(line.stop_sequence, 10)  if line.stop_sequence
-		line.direction_id = parseInt(line.direction_id, 10)  if line.direction_id
-
-		if line.stop_lat and line.stop_lon
-			line.loc = [ parseFloat(line.stop_lon), parseFloat(line.stop_lat) ]
-			agencyBounds.sw[0] = line.loc[0]  if agencyBounds.sw[0] > line.loc[0] or not agencyBounds.sw[0]
-			agencyBounds.ne[0] = line.loc[0]  if agencyBounds.ne[0] < line.loc[0] or not agencyBounds.ne[0]
-			agencyBounds.sw[1] = line.loc[1]  if agencyBounds.sw[1] > line.loc[1] or not agencyBounds.sw[1]
-			agencyBounds.ne[1] = line.loc[1]  if agencyBounds.ne[1] < line.loc[1] or not agencyBounds.ne[1]
-
-		model.create new model(line), (err) ->
+	mmodel.create mrecords, (err) ->
 			if err
 				deferred.reject(err)
 

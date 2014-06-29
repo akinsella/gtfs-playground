@@ -25,13 +25,25 @@ AmqpTaskSubmitterStream = (taskQueue, options) ->
 
 	stream.Writable.call(this, writeOptions)
 
+	@model = options.model
+	@agency = options.agency
 	@amqpClient = amqp.createClient("TASK_SUBMITTER")
 	@taskQueue = taskQueue
 
 util.inherits(AmqpTaskSubmitterStream, stream.Writable)
 
 AmqpTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
-	@amqpClient.publishJSON @taskQueue, records, cb
+
+	records = records.reduce (previousValue, currentValue, index, array) ->
+		previousValue + currentValue + '\n'
+	, ''
+
+#	logger.info "Creating Buffer for string with length: #{records.length}"
+
+	buffer = new Buffer(records.length)
+	buffer.write(records)
+
+	@amqpClient.publishText "#{@agency.key}.#{@model}", records, cb
 
 
 ########################################################################################

@@ -2,54 +2,53 @@
 ### Modules
 ########################################################################################
 
+async = require 'async'
 Promise = require 'bluebird'
 
+config = require '../conf/config'
+gtfs = require '../conf/gtfs'
 logger = require '../log/logger'
 
-Agency = require '../model/agency'
-Calendar = require '../model/calendar'
-CalendarDate = require '../model/calendarDate'
-Route = require '../model/route'
-Stop = require '../model/stop'
-StopTime = require '../model/stopTime'
-Trip = require '../model/trip'
-Frequencies = require '../model/frequencies'
-FareAttribute = require '../model/fareAttribute'
-FareRule = require '../model/fareRule'
-FeedInfo = require '../model/feedInfo'
-Transfer = require '../model/transfer'
+Stream = require 'stream'
+
+csv = require 'csv-streamify'
+CsvLineToObjectStream = require '../stream/CsvLineToObjectStream'
 
 
+class StringStream extends Stream.Readable
+	constructor: (@str) ->
+		super()
 
-########################################################################################
-### Variables
-########################################################################################
-
-models =
-	"Agency": Agency
-	"CalendarDate": CalendarDate
-	"Calendar": Calendar
-	"FareAttribute": FareAttribute
-	"FareRule": FareRule
-	"FeedInfo": FeedInfo
-	"Frequencies": Frequencies
-	"Route": Route
-	"StopTime": StopTime
-	"Stop": Stop
-	"Transfer": Transfer
-	"Trip": Trip
+	_read: (size) ->
+		@push new Buffer(@str).toString('utf-8')
+		@push null
 
 
 ########################################################################################
 ### Class
 ########################################################################################
 
-importLines = (jsonMessages) ->
-	lines = jsonMessages.map (jsonMessage) ->
+importLines = (agency, model, records) ->
 
-		agencyKey = jsonMessage.agency.key
-		agencyBounds = jsonMessage.agency.bounds
-		line = jsonMessage.line
+	deferred = Promise.defer()
+
+	model = gtfs.models[model]
+
+	recordsStream = new StringStream(records)
+
+	csvStream = csv({ objectMode: true, newline:'\n' })
+
+	cl2oStream = new CsvLineToObjectStream( model, agency.key, { sw: [], ne: [] })
+
+	recordsStream
+	.pipe(csvStream)
+	.pipe(cl2oStream)
+	.on 'data', (message) ->
+
+		agencyKey = agency.key
+		agencyBounds = agency.bounds
+
+		line = message.line
 
 		for key of line
 			delete line[key]  if line[key] is null
@@ -65,11 +64,17 @@ importLines = (jsonMessages) ->
 			agencyBounds.sw[1] = line.loc[1]  if agencyBounds.sw[1] > line.loc[1] or not agencyBounds.sw[1]
 			agencyBounds.ne[1] = line.loc[1]  if agencyBounds.ne[1] < line.loc[1] or not agencyBounds.ne[1]
 
-		line
+		model.create new model(line), (err) ->
+			if err
+				deferred.reject(err)
 
-	model = jsonMessages[0].model
+	.on 'finish', (err, data) ->
+		if err
+			deferred.reject(err)
+		else
+			deferred.fulfill(data)
 
-	Promise.promisify(models[model].create, models[model])(lines)
+	deferred.promise
 
 
 

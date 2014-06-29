@@ -12,8 +12,7 @@ config = require '../conf/config'
 ### Functions
 ########################################################################################
 
-logger.info("config: " + JSON.stringify(config))
-logger.info("config: " + JSON.stringify(config.mongo))
+logger.info "config: #{JSON.stringify(config.mongo)}"
 
 url = "mongodb://#{config.mongo.hostname}:#{config.mongo.port}/#{config.mongo.dbname}"
 options =

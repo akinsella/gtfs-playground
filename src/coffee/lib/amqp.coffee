@@ -56,6 +56,25 @@ createClient = (name) ->
 		else
 			amqpClientReady.then publish
 
+	amqpClient.publishText = (channel, message, callback) ->
+		logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}]"
+
+		publish = () ->
+			amqpClient.queue channel, { }, (queue) ->
+				exchangeOpts = { type: 'fanout', confirm: true }
+				amqpClient.exchange channel, exchangeOpts, (exchange) ->
+					queue.bind exchange, channel, (data) ->
+						exchange.publish channel, message, { }, (err, data) ->
+							if exchangeOpts.confirm
+								callback(err, data)
+						if !exchangeOpts.confirm
+							callback()
+
+		if amqpClient.readyEmitted
+			publish()
+		else
+			amqpClientReady.then publish
+
 
 	amqpClient.subscribeTopic = (channel, channelHandler) ->
 		queueName = "#{channel}_#{os.hostname().toUpperCase().replace(/[.-]/g, "_")}_#{uuid.v4().toUpperCase().replace(/[-]/g, "_")}"

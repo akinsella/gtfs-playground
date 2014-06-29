@@ -80,7 +80,8 @@
     "webkit-devtools-agent": "~0.2.4",
     "winston": "~0.7.2",
     "zmq": "~2.7.0",
-    "zmq-bokeh": "~0.4.4"
+    "zmq-bokeh": "~0.4.4",
+    "buffertools": "~2.1.2"
   },
   "devDependencies": {
     "should": "2.1.1",

@@ -5,6 +5,7 @@
 _ = require('underscore')._
 
 
+
 ########################################################################################
 ### Config
 ########################################################################################
@@ -31,24 +32,6 @@ if !config
 			stopWatch: true
 		logging:
 			basePath = "#{__dirname}"
-		gtfs:
-#			agencies: [
-#				# Put agency_key names from gtfs-data-exchange.com.
-#                #Optionally, specify a download URL to use a dataset not from gtfs-data-exchange.com
-#				'alamedaoakland-ferry',
-#				{ agency_key: 'caltrain', url: 'http://www.gtfs-data-exchange.com/agency/caltrain/latest.zip'},
-#				'ac-transit',
-#				'county-connection',
-#				'san-francisco-municipal-transportation-agency',
-#				'bay-area-rapid-transit',
-#				'golden-gate-ferry'
-#			]
-			agencies: [
-				{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
-			]
-#			agencies: [
-#				{ key: 'Keolis', url: 'http://localhost/data/keolis-rennes_20101015_1538.zip' }
-#			]
 		amqp:
 			hostname: "127.0.0.1"
 			port: "5672"
@@ -61,9 +44,12 @@ if !config
 			log:
 				level: "debug"
 				path:  "#{__dirname}/../log/bokeh.log"
+		downloads:
+			directory: 'downloads'
 
 
 	config = _.extend({}, localConfig)
+
 
 
 ########################################################################################
@@ -81,10 +67,9 @@ module.exports =
 	monitoring: config.monitoring
 	feature: config.feature
 	logging: config.logging
-	gtfs: config.gtfs
 	bokeh: config.bokeh
 	amqp: config.amqp
-
+	downloads: config.downloads
 
 
 

@@ -8,6 +8,7 @@ Promise = require 'bluebird'
 csv = require 'csv-streamify'
 split = require 'split'
 
+gtfs = require '../conf/gtfs'
 logger = require '../log/logger'
 config = require '../conf/config'
 amqp = require '../lib/amqp'
@@ -26,24 +27,18 @@ AmqpTaskSubmitterStream = require '../stream/AmqpTaskSubmitterStream'
 ### Broker & Workers
 ########################################################################################
 
-#broker = new bokeh.Broker config.bokeh
-#logger.info "[#{process.pid}] Initialized bokeh broker"
-#
-#worker = new bokeh.Worker config.bokeh
-#logger.info "[#{process.pid}] Initialized bokeh worker"
-#worker.registerTask "ProcessRecord", GtfsRecordsImportTask
-#
-#client = new bokeh.Client config.bokeh
-#logger.info "[#{process.pid}] Initialized bokeh client"
-
 amqpClient = amqp.createClient "GTFS_FILE_IMPORTER"
-amqpClient.subscribeQueue "ProcessRecord", new GtfsRecordsImportTask()
+
+for agency in gtfs.agencies
+	for gtfsFile in gtfs.files
+		amqpClient.subscribeQueue "#{agency.key}.#{gtfsFile.fileNameBase}", new GtfsRecordsImportTask(agency, gtfsFile.fileNameBase)
 
 
 
 ########################################################################################
 ### Functions
 ########################################################################################
+
 
 importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
@@ -57,51 +52,48 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 		deferred.fulfill()
 	else
 		logger.info "#{agency.key}: '#{GTFSFile.fileNameBase}' Importing data"
-		csvLinesRead = 0
-		c2loLinesRead = 0
-		batchRead = 0
-		amqpRead = 0
+
 
 		fsStream = fs.createReadStream(filePath)
-		csvStream = csv({ objectMode: true, newline: '\r\n', highWaterMark: 10000 })
-		csvStream.on 'data', () ->
-			csvLinesRead++
-			logger.info "[CSV][#{GTFSFile.fileNameBase}][#{csvLinesRead}] CSV lines read: #{csvLinesRead}" if csvLinesRead % 1000 == 0
 
-		cl2oStream = new CsvLineToObjectStream(GTFSFile, agency.key, { sw: [], ne: [] }, { highWaterMark: 8000 })
-		cl2oStream.on 'data', () ->
-			c2loLinesRead++
-			logger.info "[C2LO][#{GTFSFile.fileNameBase}][#{c2loLinesRead}] CL2O processed: #{c2loLinesRead}" if c2loLinesRead % 1000 == 0
-		batchStream = new BatchStream({ size : 2000, highWaterMark: 20 })
+		splitRead = 0
+		splitStream = split()
+		splitStream.on 'data', () ->
+			splitRead++
+			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{splitRead}] Batch processed: #{splitRead}" if splitRead % 100000 == 0
+		splitStream.on 'drain', () ->
+			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{splitRead}] drain"
+
+
+		batchRead = 0
+		batchStream = new BatchStream({ size : 10000, highWaterMark: 100 })
 		batchStream.on 'data', () ->
 			batchRead++
 			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{batchRead}] Batch processed: #{batchRead}" if batchRead % 100 == 0
-		batchStream.on 'drain', (err, data) ->
-			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{amqpRead}] drain"
-		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 18 })
+		batchStream.on 'drain', () ->
+			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{batchRead}] drain"
+
+
+		amqpRead = 0
+		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 50, agency: agency, model: GTFSFile.fileNameBase })
 		amqpTaskSubmitterStream.on 'data', () ->
 			amqpRead++
-			logger.info "[AMQP][#{GTFSFile.fileNameBase}][#{amqpRead}] AMQP reads: #{amqpRead}" if amqpRead % 1000 == 0
-		amqpTaskSubmitterStream.on 'drain', (err, data) ->
+			logger.info "[AMQP][#{GTFSFile.fileNameBase}][#{amqpRead}] AMQP reads: #{amqpRead}" if amqpRead % 100000 == 0
+		amqpTaskSubmitterStream.on 'drain', () ->
 			logger.info "[AMQP][#{GTFSFile.fileNameBase}][#{amqpRead}] drain"
-		amqpTaskSubmitterStream.on 'finish', (err, data) ->
+
+		amqpTaskSubmitterStream
+
+
+		fsStream
+		.pipe(splitStream)
+		.pipe(batchStream)
+		.pipe(amqpTaskSubmitterStream).on 'finish', (err, data) ->
 			if err
 				deferred.reject(err)
 			else
 				deferred.fulfill(data)
 
-		fsStream
-		.pipe(csvStream)
-		.pipe(cl2oStream)
-		.pipe(batchStream)
-		.pipe(amqpTaskSubmitterStream)
-	#	fsStream.pipe(csvStream).pipe(cl2oStream).pipe(batchStream).pipe(amqpTaskSubmitterStream)
-
-
-	#	bokehTaskSubmitterStream = new BokehTaskSubmitterStream(client, "ProcessRecord")
-	#	bokehTaskSubmitterStream.on 'end', deferred.makeNodeResolver()
-
-	#	fsStream.pipe(csvStream).pipe(cl2oStream).pipe(batchStream).pipe(bokehTaskSubmitterStream)
 
 	deferred.promise
 

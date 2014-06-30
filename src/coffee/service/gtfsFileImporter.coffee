@@ -91,7 +91,8 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 		fsStream
 		.pipe(splitStream)
 		.pipe(batchStream)
-		.pipe(amqpTaskSubmitterStream).on 'finish', (err, data) ->
+		.pipe(amqpTaskSubmitterStream)
+		.on 'finish', (err, data) ->
 			if err
 				deferred.reject(err)
 			else

@@ -18,11 +18,12 @@ class ArrayStream extends Stream.Readable
 	constructor: (@array) ->
 		super()
 
-	_read: (size) ->
-
-		@array.forEach (entry) =>
-			@push entry + '\r\n'
-		@push null
+	_read: () ->
+		if @array.length == 0
+			@push null
+		else
+			@push(@array[0] + '\r\n');
+			@array.shift()
 
 
 ########################################################################################
@@ -53,9 +54,9 @@ class GtfsRecordsImportTask
 			cl2oStream = new CsvLineToObjectStream( gtfs.models[@gtfsFileBaseName], message.agency.key,  { sw: [], ne: [] })
 
 			arrayStream
-#			.pipe(devnull())
 			.pipe(csvStream)
 			.pipe(batchStream)
+#			.pipe(devnull({ objectMode: true }))
 			.pipe(cl2oStream)
 			.on 'data', (records) =>
 

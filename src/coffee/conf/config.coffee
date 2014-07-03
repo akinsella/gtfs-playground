@@ -24,6 +24,8 @@ if !config
 			port: process.env.MONGO_PORT || 27017
 			username: process.env.MONGO_USERNAME # 'gtfs-playground'
 			password: process.env.MONGO_PASSWORD # 'Password123'
+			nativeParser: if process.env.MONGO_NATIVE_PARSER != undefined then (process.env.MONGO_NATIVE_PARSER == "true") else true
+			poolSize: process.env.MONGO_POOL_SIZE || 5
 		monitoring:
 			newrelic:
 				apiKey: process.env.NEW_RELIC_API_KEY

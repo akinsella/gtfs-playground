@@ -46,9 +46,9 @@ createClient = (name) ->
 				amqpClient.exchange channel, exchangeOpts, (exchange) ->
 					queue.bind exchange, channel, (data) ->
 						exchange.publish channel, message, { }, (err, data) ->
-							if exchangeOpts.confirm
+							if exchangeOpts.confirm && callback
 								callback(err, data)
-						if !exchangeOpts.confirm
+						if !exchangeOpts.confirm && callback
 							callback()
 
 		if amqpClient.readyEmitted

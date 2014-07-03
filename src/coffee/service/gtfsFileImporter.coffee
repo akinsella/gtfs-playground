@@ -7,6 +7,7 @@ fs = require 'fs'
 Promise = require 'bluebird'
 csv = require 'csv-streamify'
 split = require 'split'
+uuid = require 'uuid'
 
 gtfs = require '../conf/gtfs'
 logger = require '../log/logger'
@@ -33,6 +34,26 @@ for gtfsFile in gtfs.files
 	amqpClient.subscribeQueue "#{gtfsFile.fileNameBase}", new GtfsRecordsImportTask(gtfsFile.fileNameBase)
 
 
+########################################################################################
+### Classes
+########################################################################################
+
+class InsertedResultConsumer
+
+	constructor: () ->
+		@inserted = 0
+		@batchCount = 0
+
+	handleMessage: (channel, message, callback) ->
+		@inserted += message.inserted || 0
+		@batchCount += 1
+
+		logger.info "[MONGO] Inserted lines: #{@inserted}" if @batchCount % 100 == 0
+
+		if callback
+			callback()
+
+
 
 ########################################################################################
 ### Functions
@@ -40,6 +61,8 @@ for gtfsFile in gtfs.files
 
 
 importGTFSFile = (agency, GTFSFile, downloadDir) ->
+
+	jobUuid = uuid.v4()
 
 	firstLine = ''
 
@@ -53,7 +76,6 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 		deferred.fulfill()
 	else
 		logger.info "#{agency.key}: '#{GTFSFile.fileNameBase}' Importing data"
-
 
 		fsStream = fs.createReadStream(filePath)
 
@@ -69,7 +91,7 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
 
 		batchRead = 0
-		batchStream = new BatchStream({ size : 10000, highWaterMark: 100 })
+		batchStream = new BatchStream({ size : 1000, highWaterMark: 100 })
 		batchStream.on 'data', () ->
 			batchRead++
 			logger.info "[BATCH][#{GTFSFile.fileNameBase}][#{batchRead}] Batch processed: #{batchRead}" if batchRead % 100 == 0
@@ -78,7 +100,23 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 
 
 		amqpRead = 0
-		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", { highWaterMark: 50, agency: agency, model: GTFSFile.fileNameBase, firstLine: () -> if batchRead == 0 then undefined else firstLine })
+
+
+		replyQueueJobUuid = jobUuid.replace(/-/g,"_")
+		replyQueue = "#{GTFSFile.fileNameBase}_result_#{replyQueueJobUuid}".toUpperCase()
+
+		amqpClient.subscribeQueue replyQueue, new InsertedResultConsumer()
+
+		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", {
+			highWaterMark: 50,
+			agency: agency,
+			model: GTFSFile.fileNameBase,
+			job: {
+				replyQueue: replyQueue
+				uuid: jobUuid
+			},
+			firstLine: () -> if batchRead == 0 then undefined else firstLine
+		})
 		amqpTaskSubmitterStream.on 'data', () ->
 			amqpRead++
 			logger.info "[AMQP][#{GTFSFile.fileNameBase}][#{amqpRead}] AMQP reads: #{amqpRead}" if amqpRead % 100000 == 0

@@ -38,6 +38,7 @@
     "async": "*",
     "batch-stream": "0.1.0",
     "bluebird": "^2.1.3",
+    "buffertools": "~2.1.2",
     "coffee-script": "*",
     "connect-domain": "*",
     "connect-mongo": "*",
@@ -53,7 +54,8 @@
     "mkdirp": "*",
     "moment": "*",
     "moment-timezone": "0.0.3",
-    "mongoose": "*",
+    "mongodb": "1.4.7",
+    "mongoose": "3.8.12",
     "mongoose-pureautoinc": "*",
     "newrelic": "*",
     "ntwitter": "*",
@@ -80,8 +82,7 @@
     "webkit-devtools-agent": "~0.2.4",
     "winston": "~0.7.2",
     "zmq": "~2.7.0",
-    "zmq-bokeh": "~0.4.4",
-    "buffertools": "~2.1.2"
+    "zmq-bokeh": "~0.4.4"
   },
   "devDependencies": {
     "should": "2.1.1",

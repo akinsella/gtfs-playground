@@ -28,6 +28,7 @@ AmqpTaskSubmitterStream = (taskQueue, options) ->
 	@firstLine = options.firstLine
 	@model = options.model
 	@agency = options.agency
+	@job = options.job
 	@amqpClient = amqp.createClient("TASK_SUBMITTER")
 	@taskQueue = taskQueue
 
@@ -39,7 +40,7 @@ AmqpTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
 	if records && firstLine != records[0]
 		records.unshift(firstLine)
 
-	@amqpClient.publishText "#{@model}", { agency: { key: @agency.key }, records: records }, cb
+	@amqpClient.publishText "#{@model}", { agency: { key: @agency.key }, records: records, job: @job }, cb
 
 
 ########################################################################################

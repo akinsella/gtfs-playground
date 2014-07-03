@@ -7,6 +7,7 @@ devnull = require 'dev-null'
 gtfs = require '../conf/gtfs'
 logger = require '../log/logger'
 gtfsRecordImporter = require './gtfsRecordImporter'
+amqp = require '../lib/amqp'
 
 csv = require 'csv-streamify'
 BatchStream = require 'batch-stream'
@@ -35,7 +36,7 @@ class GtfsRecordsImportTask
 	count = 0
 
 	constructor: (@gtfsFileBaseName) ->
-
+		@amqpClient = amqp.createClient "GTFS_RECORDS_IMPORT_TASK"
 
 	handleMessage: (channel, message, callback) ->
 		@run(message, callback)
@@ -50,7 +51,7 @@ class GtfsRecordsImportTask
 		else
 			arrayStream = new ArrayStream(message.records)
 			csvStream = csv({ objectMode: true, newline:'\r\n', columns: true })
-			batchStream = new BatchStream({ size : 1000 })
+			batchStream = new BatchStream({ size : 100 })
 			cl2oStream = new CsvLineToObjectStream( gtfs.models[@gtfsFileBaseName], message.agency.key,  { sw: [], ne: [] })
 
 			arrayStream
@@ -58,15 +59,15 @@ class GtfsRecordsImportTask
 			.pipe(batchStream)
 #			.pipe(devnull({ objectMode: true }))
 			.pipe(cl2oStream)
-			.on 'data', (records) =>
-
+			.on 'data', (records) ->
 				gtfsRecordImporter.importLines(message.agency, self.gtfsFileBaseName, records)
 				.then (inserted) ->
 					count += inserted
-#					logger.info "[MONGO][#{process.pid}][#{message.agency.key}][#{self.gtfsFileBaseName}][#{count}] Total lines inserted: #{count}" if Math.floor(count/10) % 100 == 0
-
+#					logger.info "[#{process.pid}][MONGO][SUCCESS][#{message.agency.key}][#{self.gtfsFileBaseName}][#{count}] Total lines inserted: #{count}" if Math.floor(count/10) % 100 == 0
+					self.amqpClient.publishJSON "#{message.job.replyQueue}",
+						inserted: inserted
 				.catch (err) ->
-					console.log "[#{process.pid}][#{message.agency.key}][#{self.gtfsFileBaseName}][#{count}] Error: #{err.message} - Stack: #{err.stack}"
+#					logger.info "[#{process.pid}][ERROR][#{err.type}][#{message.agency.key}][#{self.gtfsFileBaseName}][#{count}] #{err.message} - Stack: #{err.stack}"
 
 			.on 'finish', (err) ->
 				if callback

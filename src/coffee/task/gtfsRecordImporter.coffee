@@ -5,9 +5,7 @@
 async = require 'async'
 Promise = require 'bluebird'
 
-Stream = require 'stream'
 MongoClient = require('mongodb').MongoClient
-csv = require 'csv-streamify'
 
 config = require '../conf/config'
 gtfs = require '../conf/gtfs'
@@ -22,19 +20,6 @@ CsvLineToObjectStream = require '../stream/CsvLineToObjectStream'
 
 dbPromise = Promise.promisify(MongoClient.connect)("mongodb://#{config.mongo.hostname}:#{config.mongo.port}/#{config.mongo.dbname}")
 db = undefined
-
-
-########################################################################################
-### Classes
-########################################################################################
-
-class StringStream extends Stream.Readable
-	constructor: (@str) ->
-		super()
-
-	_read: () ->
-		@push new Buffer(@str).toString('utf-8')
-		@push null
 
 
 ########################################################################################

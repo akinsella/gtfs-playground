@@ -40,7 +40,8 @@ AmqpTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
 	if records && firstLine != records[0]
 		records.unshift(firstLine)
 
-	@amqpClient.publishText "#{@model}", { agency: { key: @agency.key }, records: records, job: @job }, cb
+	queueName = "#{@model}_#{@job.uuid}".toUpperCase().replace /[-]/g, '_'
+	@amqpClient.publishText queueName, { agency: { key: @agency.key }, records: records, job: @job }, cb
 
 
 ########################################################################################

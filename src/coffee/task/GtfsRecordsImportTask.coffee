@@ -11,20 +11,9 @@ amqp = require '../lib/amqp'
 
 csv = require 'csv-streamify'
 BatchStream = require 'batch-stream'
-Stream = require 'stream'
+ArrayStream = require '../stream/ArrayStream'
 CsvLineToObjectStream = require '../stream/CsvLineToObjectStream'
 
-
-class ArrayStream extends Stream.Readable
-	constructor: (@array) ->
-		super()
-
-	_read: () ->
-		if @array.length == 0
-			@push null
-		else
-			@push(@array[0] + '\r\n');
-			@array.shift()
 
 
 ########################################################################################

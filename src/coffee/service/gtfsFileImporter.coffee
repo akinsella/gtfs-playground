@@ -5,23 +5,18 @@
 path = require 'path'
 fs = require 'fs'
 Promise = require 'bluebird'
-csv = require 'csv-streamify'
 split = require 'split'
-uuid = require 'uuid'
 
 gtfs = require '../conf/gtfs'
 logger = require '../log/logger'
 config = require '../conf/config'
 amqp = require '../lib/amqp'
 
-GtfsRecordsImportTask = require '../task/GtfsRecordsImportTask'
+InsertedResultConsumer = require './InsertedResultConsumer'
 
-stream = require 'stream'
 BatchStream = require 'batch-stream'
 CsvLineToObjectStream = require '../stream/CsvLineToObjectStream'
-BokehTaskSubmitterStream = require '../stream/BokehTaskSubmitterStream'
 AmqpTaskSubmitterStream = require '../stream/AmqpTaskSubmitterStream'
-
 
 
 ########################################################################################
@@ -30,39 +25,13 @@ AmqpTaskSubmitterStream = require '../stream/AmqpTaskSubmitterStream'
 
 amqpClient = amqp.createClient "GTFS_FILE_IMPORTER"
 
-for gtfsFile in gtfs.files
-	amqpClient.subscribeQueue "#{gtfsFile.fileNameBase}", new GtfsRecordsImportTask(gtfsFile.fileNameBase)
-
-
-########################################################################################
-### Classes
-########################################################################################
-
-class InsertedResultConsumer
-
-	constructor: () ->
-		@inserted = 0
-		@batchCount = 0
-
-	handleMessage: (channel, message, callback) ->
-		@inserted += message.inserted || 0
-		@batchCount += 1
-
-		logger.info "[MONGO] Inserted lines: #{@inserted}" if @batchCount % 100 == 0
-
-		if callback
-			callback()
-
-
 
 ########################################################################################
 ### Functions
 ########################################################################################
 
 
-importGTFSFile = (agency, GTFSFile, downloadDir) ->
-
-	jobUuid = uuid.v4()
+importGTFSFile = (job, agency, GTFSFile, downloadDir) ->
 
 	firstLine = ''
 
@@ -102,7 +71,7 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 		amqpRead = 0
 
 
-		replyQueueJobUuid = jobUuid.replace(/-/g,"_")
+		replyQueueJobUuid = job.uuid.replace(/-/g,"_")
 		replyQueue = "#{GTFSFile.fileNameBase}_result_#{replyQueueJobUuid}".toUpperCase()
 
 		amqpClient.subscribeQueue replyQueue, new InsertedResultConsumer()
@@ -113,7 +82,7 @@ importGTFSFile = (agency, GTFSFile, downloadDir) ->
 			model: GTFSFile.fileNameBase,
 			job: {
 				replyQueue: replyQueue
-				uuid: jobUuid
+				uuid: job.uuid
 			},
 			firstLine: () -> if batchRead == 0 then undefined else firstLine
 		})

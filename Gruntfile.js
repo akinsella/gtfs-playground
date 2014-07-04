@@ -115,7 +115,7 @@ module.exports = function(grunt) {
 		coffee: {
 			dev:{
 				options: {
-					sourceMap: true
+					sourceMap: false
 				},
 				expand: true,
 				cwd: 'src/coffee/',
@@ -125,7 +125,7 @@ module.exports = function(grunt) {
 			},
 			test:{
 				options: {
-					sourceMap: true
+					sourceMap: false
 				},
 				expand: true,
 				cwd: 'test/coffee/',

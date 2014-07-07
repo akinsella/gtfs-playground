@@ -8,28 +8,26 @@ util = require 'util'
 logger = require '../log/logger'
 
 
-
 ########################################################################################
 ### Stream
 ########################################################################################
 
-BokehTaskSubmitterStream = (client, taskQueue, options) ->
-	options or options = {}
+class BokehTaskSubmitterStream extends stream.Writable
 
-	writeOptions =
-		objectMode: true
+	constructor: (@client, @taskQueue, @options) ->
+		@options or @options = {}
 
-	if options.highWaterMark
-		writeOptions.highWaterMark = options.highWaterMark
+		writeOptions =
+			objectMode: true
 
-	stream.Writable.call(this, writeOptions)
-	@client = client
-	@taskQueue = taskQueue
+		if @options.highWaterMark
+			writeOptions.highWaterMark = @options.highWaterMark
 
-util.inherits(BokehTaskSubmitterStream, stream.Writable)
+		super(writeOptions)
 
-BokehTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
-	@client.submitTask @taskQueue, records, cb
+
+	_write: (records, encoding, cb) ->
+		@client.submitTask @taskQueue, records, cb
 
 
 

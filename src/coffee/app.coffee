@@ -7,6 +7,8 @@ heapdump = require 'heapdump'
 
 config = require './conf/config'
 logger = require './log/logger'
+amqp = require './lib/amqp'
+JobStartConsumer = require './service/JobStartConsumer'
 
 if config.devMode
 	logger.info "Dev Mode enabled."
@@ -55,7 +57,6 @@ app.configure ->
 	app.use express.cookieParser()
 
 	app.use express.logger()
-	app.use express.methodOverride()
 	app.use allowCrossDomain()
 
 	app.use requestLogger()
@@ -85,6 +86,18 @@ app.configure 'production', () ->
 gtfsImportController = require './controller/importController'
 
 app.get "/import", gtfsImportController.importData
+
+
+
+
+########################################################################################
+### Job stuff
+########################################################################################
+
+logger.info "[#{process.pid}] Initializing Job Start consumer"
+amqpClient = amqp.createClient "APP"
+
+amqpClient.subscribeTopic "JOB_START", new JobStartConsumer(amqpClient)
 
 
 

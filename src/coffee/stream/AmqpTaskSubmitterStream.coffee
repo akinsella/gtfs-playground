@@ -14,34 +14,33 @@ amqp = require '../lib/amqp'
 ### Stream
 ########################################################################################
 
-AmqpTaskSubmitterStream = (taskQueue, options) ->
-	options or options = {}
+class AmqpTaskSubmitterStream extends stream.Writable
 
-	writeOptions =
-		objectMode: true
+	constructor: (@taskQueue, @options) ->
+		@options or @options = {}
 
-	if options.highWaterMark
-		writeOptions.highWaterMark = options.highWaterMark
+		writeOptions =
+			objectMode: true
 
-	stream.Writable.call(this, writeOptions)
+		if options.highWaterMark
+			writeOptions.highWaterMark = @options.highWaterMark
 
-	@firstLine = options.firstLine
-	@model = options.model
-	@agency = options.agency
-	@job = options.job
-	@amqpClient = amqp.createClient("TASK_SUBMITTER")
-	@taskQueue = taskQueue
+		super(writeOptions)
 
-util.inherits(AmqpTaskSubmitterStream, stream.Writable)
+		@firstLine = options.firstLine
+		@model = options.model
+		@agency = options.agency
+		@job = options.job
+		@amqpClient = amqp.createClient("TASK_SUBMITTER")
 
-AmqpTaskSubmitterStream.prototype._write = (records, encoding, cb) ->
+	_write: (records, encoding, cb) ->
 
-	firstLine = @firstLine()
-	if records && firstLine != records[0]
-		records.unshift(firstLine)
+		firstLine = @firstLine()
+		if records && firstLine != records[0]
+			records.unshift(firstLine)
 
-	queueName = "#{@model}_#{@job.uuid}".toUpperCase().replace /[-]/g, '_'
-	@amqpClient.publishText queueName, { agency: { key: @agency.key }, records: records, job: @job }, cb
+		queueName = "#{@model}_#{@job.uuid}".toUpperCase().replace /[-]/g, '_'
+		@amqpClient.publishText queueName, { agency: { key: @agency.key }, records: records, job: @job }, cb
 
 
 ########################################################################################

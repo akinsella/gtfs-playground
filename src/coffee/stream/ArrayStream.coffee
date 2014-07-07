@@ -13,8 +13,10 @@ logger = require '../log/logger'
 ########################################################################################
 
 class ArrayStream extends Stream.Readable
-	constructor: (@array) ->
-		super()
+	constructor: (@array, @options) ->
+		@options or @options = {}
+
+		super(@options)
 
 	_read: () ->
 		if @array.length == 0

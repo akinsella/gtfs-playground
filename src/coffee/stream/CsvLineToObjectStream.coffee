@@ -13,38 +13,36 @@ logger = require '../log/logger'
 ### Stream
 ########################################################################################
 
-CsvLineToObjectStream = (GTFSFile, agency_key, agency_bounds, options) ->
-	options or options = {}
+class CsvLineToObjectStream extends stream.Transform
 
-	transformOptions =
-		objectMode: true
+	constructor: (@GTFSFile, @agency_key, @agency_bounds, @options) ->
+		@options or @options = {}
+		@index = 0
 
-	if options.highWaterMark
-		transformOptions.highWaterMark = options.highWaterMark
+		transformOptions =
+			objectMode: true
 
-	stream.Transform.call(this, transformOptions)
-	@GTFSFile = GTFSFile
-	@agency_key = agency_key
-	@agency_bounds = agency_bounds
-	@index = 0
+		if @options.highWaterMark
+			transformOptions.highWaterMark = @options.highWaterMark
 
-util.inherits(CsvLineToObjectStream, stream.Transform)
+		super(transformOptions)
 
-CsvLineToObjectStream.prototype._transform = (chunk, encoding, callback) ->
-	@index++
 
-	logger.info "[CL2O][#{process.pid}] Index: #{@index}"  if @index % 10000 == 0
+	_transform: (chunk, encoding, callback) ->
+		@index++
 
-	this.push(
-		model: @GTFSFile.collection.modelName
-		index: @index
-		line: chunk
-		agency:
-			key: @agency_key
-			bounds: @agency_bounds
-	)
+		logger.info "[CL2O][#{process.pid}] Index: #{@index}" if @index % 10000 == 0
 
-	callback()
+		this.push(
+			model: @GTFSFile.collection.modelName
+			index: @index
+			line: chunk
+			agency:
+				key: @agency_key
+				bounds: @agency_bounds
+		)
+
+		callback()
 
 
 

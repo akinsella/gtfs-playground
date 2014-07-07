@@ -19,9 +19,6 @@ JobStartConsumer = require './JobStartConsumer'
 amqpClient = amqp.createClient "GTFS_FILES_IMPORTER"
 
 
-amqpClient.subscribeQueue "JOB_START", new JobStartConsumer(amqpClient)
-
-
 ########################################################################################
 ### Functions
 ########################################################################################

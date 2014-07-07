@@ -6,7 +6,7 @@ os = require 'os'
 util = require 'util'
 
 amqp = require 'amqp'
-uuid = require 'uuid'
+Chance = require 'chance'
 Promise = require 'bluebird'
 
 logger = require '../log/logger'
@@ -77,26 +77,33 @@ createClient = (name) ->
 
 
 	amqpClient.subscribeTopic = (channel, channelHandler) ->
-		queueName = "#{channel}_#{os.hostname().toUpperCase().replace(/[.-]/g, "_")}_#{uuid.v4().toUpperCase().replace(/[-]/g, "_")}"
+		uuid = new Chance().hash({ length: 4, casing: 'upper' })
+		queueName = "#{channel}_#{uuid}".toUpperCase().replace(/[-]/g, "_")
 		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
-		amqpClientReady.then (amqpClient) ->
+
+		subscribeTopic = () ->
 			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
 				queue = amqpClient.queue queueName, { ### Options ### }, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message) ->
 						channelHandler.handleMessage channel, message
 
+		if amqpClient.readyEmitted
+			subscribeTopic()
+		else
+			amqpClientReady.then subscribeTopic
 
-	amqpClient.subscribeQueue = (channel, channelHandler) ->
+
+	amqpClient.subscribeQueue = (channel, options, channelHandler) ->
 		queueName = "#{channel}"
 		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
 
 		subscribeQueue = () ->
 			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
-				queue = amqpClient.queue queueName, { ### Options ### }, (queue) ->
+				queue = amqpClient.queue queueName, options, (queue) ->
 					queue.bind exchange, channel
-					queue.subscribe (message) ->
-						channelHandler.handleMessage channel, message
+					queue.subscribe (message, headers, deliveryInfo, messageObject) ->
+						channelHandler.handleMessage channel, message, headers, deliveryInfo, messageObject
 
 		if amqpClient.readyEmitted
 			subscribeQueue()

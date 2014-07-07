@@ -35,12 +35,15 @@ performBatchInsert = (db, model, records, callback) ->
 
 	batch.execute callback
 
-makeNodeResolver = (deferred) ->
+makeNodeResolver = (agency, deferred) ->
 	(err, result) ->
 		if err
-			deferred.reject(err)
+			deferred.reject err
 		else
-			deferred.fulfill(result.nInserted)
+			deferred.fulfill {
+				agency: agency
+				inserted: result.nInserted
+			}
 
 
 ########################################################################################
@@ -50,41 +53,36 @@ makeNodeResolver = (deferred) ->
 importLines = (agency, model, records) ->
 	deferred = Promise.defer()
 
-	#	mmodel = gtfs.models[model]
+	agency.bounds = { sw: [], ne: [] }
 
-	#	agencyKey = agency.key
-	#	agencyBounds = agency.bounds
+	records.line.forEach (record) ->
+		record.agency_key = agency.key
+		if record.stop_sequence
+			record.stop_sequence = parseInt(record.stop_sequence, 10)
+		if record.direction_id
+			record.direction_id = parseInt(record.direction_id, 10)
 
-	#	records.line.forEach (record) ->
-	#		record.agency_key = agency.key
-	#		if record.stop_sequence
-	#			record.stop_sequence = parseInt(record.stop_sequence, 10)
-	#		if record.direction_id
-	#			record.direction_id = parseInt(record.direction_id, 10)
+		if record.stop_lat and record.stop_lon
+			record.loc = [ parseFloat(record.stop_lon), parseFloat(record.stop_lat) ]
+			agency.bounds.sw[0] = record.loc[0]  if agency.bounds.sw[0] > record.loc[0] or not agency.bounds.sw[0]
+			agency.bounds.ne[0] = record.loc[0]  if agency.bounds.ne[0] < record.loc[0] or not agency.bounds.ne[0]
+			agency.bounds.sw[1] = record.loc[1]  if agency.bounds.sw[1] > record.loc[1] or not agency.bounds.sw[1]
+			agency.bounds.ne[1] = record.loc[1]  if agency.bounds.ne[1] < record.loc[1] or not agency.bounds.ne[1]
 
-	#		if record.stop_lat and record.stop_lon
-	#			record.loc = [ parseFloat(record.stop_lon), parseFloat(record.stop_lat) ]
-	#			agencyBounds.sw[0] = record.loc[0]  if agencyBounds.sw[0] > record.loc[0] or not agencyBounds.sw[0]
-	#			agencyBounds.ne[0] = record.loc[0]  if agencyBounds.ne[0] < record.loc[0] or not agencyBounds.ne[0]
-	#			agencyBounds.sw[1] = record.loc[1]  if agencyBounds.sw[1] > record.loc[1] or not agencyBounds.sw[1]
-	#			agencyBounds.ne[1] = record.loc[1]  if agencyBounds.ne[1] < record.loc[1] or not agencyBounds.ne[1]
-	#
-	#	mrecords = records.line.map (record) ->
-	#		new mmodel(record)
 
 	if records.line.length == 0
-		deferred.fulfill(0)
+		deferred.fulfill 0
 	else
 
 		if db
-			performBatchInsert db, model, records, makeNodeResolver(deferred)
+			performBatchInsert db, model, records, makeNodeResolver(agency, deferred)
 		else
 			dbPromise
 			.then (pDb) ->
 				db = pDb
-				performBatchInsert db, model, records, makeNodeResolver(deferred)
+				performBatchInsert db, model, records, makeNodeResolver(agency, deferred)
 			.catch (err) ->
-					deferred.reject(err)
+				deferred.reject err
 
 	deferred.promise
 

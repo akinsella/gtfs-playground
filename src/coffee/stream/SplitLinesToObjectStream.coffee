@@ -13,39 +13,36 @@ logger = require '../log/logger'
 ### Stream
 ########################################################################################
 
-SplitLinesToObjectStream = (GTFSFile, agency, options) ->
-	options or options = {}
+class SplitLinesToObjectStream extends stream.Transform
 
-	transformOptions =
-		objectMode: true
+	constructor: (@GTFSFile, @agency, @options) ->
+		@options or @options = {}
+		@index = 0
 
-	if options.highWaterMark
-		transformOptions.highWaterMark = options.highWaterMark
+		transformOptions =
+			objectMode: true
 
-	stream.Transform.call(this, transformOptions)
-	@GTFSFile = GTFSFile
-	@agency = agency
-	@index = 0
+		if options.highWaterMark
+			transformOptions.highWaterMark = @options.highWaterMark
 
-
-util.inherits(SplitLinesToObjectStream, stream.Transform)
+		super(transformOptions)
 
 
-SplitLinesToObjectStream.prototype._transform = (chunk, encoding, callback) ->
-	@index++
+	_transform: (chunk, encoding, callback) ->
+		@index++
 
-	logger.info "[CL2O][#{process.pid}] Index: #{@index}"  if @index % 10000 == 0
+		logger.info "[CL2O][#{process.pid}] Index: #{@index}"  if @index % 10000 == 0
 
-	this.push(
-		model: @GTFSFile.collection.modelName
-		index: @index
-		line: chunk
-		agency:
-			key: @agency.key
-			bounds: { sw: [], sw: [] }
-	)
+		this.push(
+			model: @GTFSFile.collection.modelName
+			index: @index
+			line: chunk
+			agency:
+				key: @agency.key
+				bounds: { sw: [], sw: [] }
+		)
 
-	callback()
+		callback()
 
 
 

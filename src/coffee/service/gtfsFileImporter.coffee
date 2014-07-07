@@ -70,11 +70,9 @@ importGTFSFile = (job, agency, GTFSFile, downloadDir) ->
 
 		amqpRead = 0
 
+		replyQueue = "#{GTFSFile.fileNameBase}_result_#{job.uuid}".toUpperCase().replace(/-/g,"_")
 
-		replyQueueJobUuid = job.uuid.replace(/-/g,"_")
-		replyQueue = "#{GTFSFile.fileNameBase}_result_#{replyQueueJobUuid}".toUpperCase()
-
-		amqpClient.subscribeQueue replyQueue, new InsertedResultConsumer()
+		amqpClient.subscribeQueue replyQueue, {}, new InsertedResultConsumer(agency)
 
 		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", {
 			highWaterMark: 50,

@@ -37,7 +37,8 @@ config =
 #			]
 	agencies: [
 #		{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502.zip' }
-		{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502-orig.zip' }
+#		{ key: 'RATP', url: 'http://localhost/data/gtfs_paris_20140502-orig.zip' }
+		{ key: 'NL', url: 'http://localhost/data/gtfs-nl.zip' }
 	]
 #			agencies: [
 #				{ key: 'Keolis', url: 'http://localhost/data/keolis-rennes_20101015_1538.zip' }

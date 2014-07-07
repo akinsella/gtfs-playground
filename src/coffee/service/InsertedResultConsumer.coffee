@@ -2,6 +2,8 @@
 ### Modules
 ########################################################################################
 
+util = require 'util'
+
 logger = require '../log/logger'
 
 
@@ -30,7 +32,7 @@ class InsertedResultConsumer
 			@agency.bounds.ne[1] = message.agency.bounds.ne[1] if @agency.bounds.ne[1] < message.agency.bounds.ne[1] or not @agency.bounds.ne[1]
 
 
-		logger.info "[MONGO][#{process.pid}][#{@batchCount}] Inserted lines: #{@inserted} from process with pid: '#{message.process.pid}'"  if @batchCount % 100 == 0
+		logger.info "[MONGO][#{process.pid}][#{@batchCount}] Inserted lines: #{@inserted} from process with pid: '#{message.process.pid}' - Agency bounds: #{util.inspect(@agency?.bounds)}"  if @batchCount % 100 == 0
 
 
 ########################################################################################

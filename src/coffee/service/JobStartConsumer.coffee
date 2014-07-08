@@ -21,7 +21,7 @@ class JobStartConsumer
 		for gtfsFile in gtfs.files
 			queueName = "#{gtfsFile.fileNameBase}_#{message.job.uuid}".toUpperCase().replace /[-]/g, '_'
 
-			logger.info "[#{process.pid}] Creating subscribtion for queue: #{queueName}"
+			logger.debug "[#{process.pid}] Creating subscribtion for queue: #{queueName}"
 			@amqpClient.subscribeQueue queueName, { ack: true, prefetchCount: 1 }, new GtfsRecordsImportTask(gtfsFile.fileNameBase)
 
 

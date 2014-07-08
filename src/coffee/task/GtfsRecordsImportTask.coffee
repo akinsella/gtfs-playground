@@ -22,7 +22,8 @@ CsvLineToObjectStream = require '../stream/CsvLineToObjectStream'
 
 class GtfsRecordsImportTask
 
-	count = 0
+	inserted = 0
+	errors = 0
 
 	constructor: (@gtfsFileBaseName) ->
 		@amqpClient = amqp.createClient "GTFS_RECORDS_IMPORT_TASK"
@@ -48,25 +49,24 @@ class GtfsRecordsImportTask
 			arrayStream = new ArrayStream(message.records)
 			csvStream = csv({ objectMode: true, newline:'\r\n', columns: true })
 			batchStream = new BatchStream({ size : 1000, highWaterMark: 100 })
-			cl2oStream = new CsvLineToObjectStream( gtfs.models[@gtfsFileBaseName], message.agency.key,  { sw: [], ne: [] })
 
 			arrayStream
 			.pipe(csvStream)
 			.pipe(batchStream)
-#			.pipe(devnull({ objectMode: true }))
-			.pipe(cl2oStream)
 			.on 'data', (records) ->
 				gtfsRecordImporter.importLines(message.agency, self.gtfsFileBaseName, records)
 				.then (result) ->
-					count += result.inserted
-#					logger.info "[#{process.pid}][MONGO][SUCCESS][#{message.agency.key}][#{self.gtfsFileBaseName}][#{count}] Total lines inserted: #{count}" if Math.floor(count/10) % 100 == 0
+					inserted += result.inserted
+					errors += result.errors
+#					logger.info "[#{process.pid}][MONGO][SUCCESS][#{message.agency.key}][#{self.gtfsFileBaseName}][#{inserted}] Total lines inserted: #{inserted}" if Math.floor(inserted/10) % 100 == 0
 					self.amqpClient.publishJSON "#{message.job.replyQueue}",
 						inserted: result.inserted
+						errors: result.errors
 						agency: result.agency
 						process:
 							pid: process.pid
 				.catch (err) ->
-#					logger.info "[#{process.pid}][ERROR][#{err.type}][#{message.agency.key}][#{self.gtfsFileBaseName}][#{count}] #{err.message} - Stack: #{err.stack}"
+#					logger.info "[#{process.pid}][ERROR][#{err.type}][#{message.agency.key}][#{self.gtfsFileBaseName}][#{inserted}] #{err.message} - Stack: #{err.stack}"
 					acknowledge()
 			.on 'finish', (err) ->
 				acknowledge()

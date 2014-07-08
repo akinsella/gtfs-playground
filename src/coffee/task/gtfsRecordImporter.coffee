@@ -2,16 +2,12 @@
 ### Modules
 ### #####################################################################################
 
-async = require 'async'
 Promise = require 'bluebird'
 
 MongoClient = require('mongodb').MongoClient
 
 config = require '../conf/config'
-gtfs = require '../conf/gtfs'
 logger = require '../log/logger'
-
-CsvLineToObjectStream = require '../stream/CsvLineToObjectStream'
 
 
 ########################################################################################
@@ -30,7 +26,7 @@ performBatchInsert = (db, model, records, callback) ->
 	modelCollection = db.collection(model)
 	batch = modelCollection.initializeUnorderedBulkOp()
 
-	records.line.forEach (record) ->
+	records.forEach (record) ->
 		batch.insert record
 
 	batch.execute callback
@@ -43,6 +39,7 @@ makeNodeResolver = (agency, deferred) ->
 			deferred.fulfill {
 				agency: agency
 				inserted: result.nInserted
+				errors: result.getWriteErrorCount()
 			}
 
 
@@ -53,9 +50,8 @@ makeNodeResolver = (agency, deferred) ->
 importLines = (agency, model, records) ->
 	deferred = Promise.defer()
 
-	agency.bounds = { sw: [], ne: [] }
 
-	records.line.forEach (record) ->
+	records.forEach (record) ->
 		record.agency_key = agency.key
 		if record.stop_sequence
 			record.stop_sequence = parseInt(record.stop_sequence, 10)
@@ -64,13 +60,14 @@ importLines = (agency, model, records) ->
 
 		if record.stop_lat and record.stop_lon
 			record.loc = [ parseFloat(record.stop_lon), parseFloat(record.stop_lat) ]
+			agency.bounds = { sw: [], ne: [] }
 			agency.bounds.sw[0] = record.loc[0]  if agency.bounds.sw[0] > record.loc[0] or not agency.bounds.sw[0]
 			agency.bounds.ne[0] = record.loc[0]  if agency.bounds.ne[0] < record.loc[0] or not agency.bounds.ne[0]
 			agency.bounds.sw[1] = record.loc[1]  if agency.bounds.sw[1] > record.loc[1] or not agency.bounds.sw[1]
 			agency.bounds.ne[1] = record.loc[1]  if agency.bounds.ne[1] < record.loc[1] or not agency.bounds.ne[1]
 
 
-	if records.line.length == 0
+	if records.length == 0
 		deferred.fulfill 0
 	else
 

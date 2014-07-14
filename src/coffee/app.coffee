@@ -19,7 +19,7 @@ if config.monitoring.newrelic.apiKey
 
 
 logger.info "Application Name: #{config.appname}"
-logger.info "Env: #{JSON.stringify config}"
+logger.info "Env: #{JSON.stringify config, undefined, 2}"
 
 
 

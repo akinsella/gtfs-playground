@@ -37,14 +37,14 @@ importGTFSFile = (job, agency, GTFSFile, downloadDir) ->
 
 	deferred = Promise.pending()
 
-	logger.info "Importing GTFS file: '#{GTFSFile.fileNameBase}' ..."
+	logger.info "[#{process.pid}][IMPORT][#{agency.key}][#{GTFSFile.fileNameBase}] Importing GTFS file: '#{GTFSFile.fileNameBase}' ..."
 
 	filePath = path.join(downloadDir, "#{GTFSFile.fileNameBase}.txt")
 	if !fs.existsSync(filePath)
-		logger.info "File with path: '#{filePath}' does not exist"
+		logger.info "[#{process.pid}][IMPORT][#{agency.key}][#{GTFSFile.fileNameBase}][Error] File with path: '#{filePath}' does not exist"
 		deferred.fulfill()
 	else
-		logger.info "#{agency.key}: '#{GTFSFile.fileNameBase}' Importing data"
+		logger.info "[#{process.pid}][IMPORT][#{agency.key}][#{GTFSFile.fileNameBase}] Importing data"
 
 		fsStream = fs.createReadStream(filePath)
 
@@ -72,7 +72,9 @@ importGTFSFile = (job, agency, GTFSFile, downloadDir) ->
 
 		replyQueue = "#{GTFSFile.fileNameBase}_result_#{job.uuid}".toUpperCase().replace(/-/g,"_")
 
-		amqpClient.subscribeQueue replyQueue, {}, new InsertedResultConsumer(agency)
+		insertedResultConsumer = new InsertedResultConsumer(agency, agency.inactivityTimeout)
+
+		amqpClient.subscribeQueue replyQueue, {}, insertedResultConsumer
 
 		amqpTaskSubmitterStream = new AmqpTaskSubmitterStream("ProcessRecord", {
 			highWaterMark: 50,
@@ -92,16 +94,24 @@ importGTFSFile = (job, agency, GTFSFile, downloadDir) ->
 
 		amqpTaskSubmitterStream
 
-
+		batchResultCountExpected = 0
 		fsStream
 		.pipe(splitStream)
 		.pipe(batchStream)
 		.pipe(amqpTaskSubmitterStream)
+		.on 'data', () ->
+			batchResultCountExpected += 1
 		.on 'finish', (err, data) ->
-			if err
-				deferred.reject(err)
-			else
-				deferred.fulfill(data)
+			insertedResultConsumer.configureBatchResultCountExpected(batchResultCountExpected)
+
+
+		insertedResultConsumer.promise()
+		.then (result) ->
+			logger.info "[#{process.pid}][IMPORT][#{agency.key}][#{GTFSFile.fileNameBase}] Job done with success for agency with key: '#{agency.key}'"
+			deferred.fulfill(result)
+		.catch (e) ->
+			logger.info "[#{process.pid}][IMPORT][#{agency.key}][#{GTFSFile.fileNameBase}] Job failed for agency with key: '#{agency.key}' - Error message: '#{e.message}'"
+			deferred.reject(e)
 
 
 	deferred.promise

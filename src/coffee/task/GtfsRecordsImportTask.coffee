@@ -15,7 +15,6 @@ ArrayStream = require '../stream/ArrayStream'
 CsvLineToObjectStream = require '../stream/CsvLineToObjectStream'
 
 
-
 ########################################################################################
 ### Class
 ########################################################################################

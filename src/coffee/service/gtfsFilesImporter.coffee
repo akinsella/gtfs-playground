@@ -30,7 +30,7 @@ importGTFSFiles = (agency, GTFSFiles, downloadDir) ->
 
 	logger.info "[#{process.pid}][JOB:#{job.uuid}][GTFS_IMPORT] Importing GTFS files ..."
 
-	amqpClient.publishJSON "JOB_START", job: job
+	amqpClient.publishMessage "JOB_START", job: job
 
 	Promise.all(
 		GTFSFiles.map (GTFSFile) ->

@@ -1,74 +1,65 @@
-####################################################################
-# Modules
-####################################################################
-
 os = require 'os'
 util = require 'util'
-
 amqp = require 'amqp'
+uuid = require 'uuid'
 Chance = require 'chance'
 Promise = require 'bluebird'
-
 logger = require '../log/logger'
 config = require '../conf/config'
 
-
-###########################################################
-# Redis initialization
-###########################################################
-
-createClient = (name) ->
+createClient = (amqpClientName) ->
+	publishExchangeCache = {}
 
 	amqpClientDeferred = Promise.pending()
 
 	amqpClient = amqp.createConnection(
-		{ host: config.amqp.hostname, port: config.amqp.port, clientProperties: { applicationName: config.appname, capabilities: { consumer_cancel_notify: true } } },
-		{ defaultExchangeName: '', reconnect: true, reconnectBackoffStrategy: 'linear', reconnectExponentialLimit: 120000, reconnectBackoffTime: 1000 }
+		{ host: config.amqp.hostname, port: config.amqp.port, login: config.amqp.login, password: config.amqp.password, authMechanism: "AMQPLAIN", vhost: config.amqp.vhost, clientProperties: { applicationName: config.appname, capabilities: { consumer_cancel_notify: true } } },
+		{ defaultExchangeName: "", reconnect: true, reconnectBackoffStrategy: "linear", reconnectExponentialLimit: 120000, reconnectBackoffTime: 1000 }
 	)
 
-	amqpClient.on 'ready', () ->
-		amqpClientDeferred.fulfill()
+	amqpClient.uuid = uuid.v4()
+	amqpClient.on "ready", () ->
+		publishExchangeCache = {}
+		logger.info "[#{amqpClientName}][AMQP][#{amqpClient.uuid}] Ready"
+		amqpClientDeferred.fulfill(amqpClient)
 
-	amqpClient.on 'error', (err) ->
-		logger.info("[AMQP] Error message: #{err.message}")
-		logger.info("[AMQP] Error message: #{err.stack}")
+	amqpClient.on "connect", () ->
+		logger.info "[#{amqpClientName}][AMQP][#{amqpClient.uuid}] Connected"
+
+	amqpClient.on "close", () ->
+		logger.info "[#{amqpClientName}][AMQP][#{amqpClient.uuid}] Connection closed"
+
+	amqpClient.on "error", (err) ->
+		logger.error "[#{amqpClientName}][AMQP][#{amqpClient.uuid}] Error message: #{err.message} - Stacktrace: #{err.stack} - Error: #{JSON.stringify(err)}"
+		amqpClientDeferred.reject(err)
 
 	amqpClientReady = amqpClientDeferred.promise
 
 
-	amqpClient.publishJSON = (channel, message, callback) ->
-		#logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}] #{JSON.stringify(message, undefined, 2)}"
-		#logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}]"
+	amqpClient.publishMessage = (channel, message, callback) ->
+		exchangeOpts = { type: "fanout", confirm: true }
 
-		publish = () ->
-			amqpClient.queue channel, { }, (queue) ->
-				exchangeOpts = { type: 'fanout', confirm: true }
-				amqpClient.exchange channel, exchangeOpts, (exchange) ->
-					queue.bind exchange, channel, (data) ->
-						exchange.publish channel, message, { }, (err, data) ->
-							if exchangeOpts.confirm && callback
-								callback(err, data)
-						if !exchangeOpts.confirm && callback
-							callback()
-
-		if amqpClient.readyEmitted
-			publish()
+		jsonMessage = JSON.stringify(message)
+		if logger.isTraceEnabled()
+			logger.trace "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][PUBLISH][Channel:#{channel}] #{jsonMessage}"
 		else
-			amqpClientReady.then publish
-
-	amqpClient.publishText = (channel, message, callback) ->
-		logger.debug "[#{name}][AMQP][SEND][Channel:#{channel}]"
+			logger.debug "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][PUBLISH][Channel:#{channel}] #{jsonMessage.substring(0, Math.min(30, jsonMessage.length))}"  if logger.isDebugEnabled()
+		publishMessage = (exchange) ->
+			exchange.publish channel, jsonMessage, {}, (err, data) ->
+				logger.error "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][PUBLISH][Channel:#{channel}] Got an error on send - Error: #{JSON.stringify(error)}"  if err
+				callback err, data  if exchangeOpts.confirm and callback
+				callback()  unless exchangeOpts.confirm
 
 		publish = () ->
-			amqpClient.queue channel, { }, (queue) ->
-				exchangeOpts = { type: 'fanout', confirm: true }
-				amqpClient.exchange channel, exchangeOpts, (exchange) ->
-					queue.bind exchange, channel, (data) ->
-						exchange.publish channel, message, { }, (err, data) ->
-							if exchangeOpts.confirm
-								callback(err, data)
-						if !exchangeOpts.confirm
-							callback()
+			exchange = publishExchangeCache[channel]
+			if exchange
+				publishMessage exchange
+			else
+				amqpClient.queue channel, {}, (queue) ->
+					amqpClient.exchange channel, exchangeOpts, (exchange) ->
+						queue.bind exchange, channel, (data) ->
+							publishExchangeCache[channel] = exchange
+							publishMessage exchange
 
 		if amqpClient.readyEmitted
 			publish()
@@ -77,13 +68,12 @@ createClient = (name) ->
 
 
 	amqpClient.subscribeTopic = (channel, channelHandler) ->
-		uuid = new Chance().hash({ length: 4, casing: 'upper' })
-		queueName = "#{channel}_#{uuid}".toUpperCase().replace(/[-]/g, "_")
-		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
-
+		channelUuid = new Chance().hash({ length: 4, casing: 'upper' })
+		queueName = "#{channel}_#{channelUuid}".toUpperCase().replace(/[-]/g, "_")
+		logger.info "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][SUBSCRIBE] Subscribing to channel '#{channel}' with topic: '#{queueName}'"
 		subscribeTopic = () ->
-			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
-				queue = amqpClient.queue queueName, { ### Options ### }, (queue) ->
+			amqpClient.exchange channel, { type: "fanout" }, ((exchange) -> ), (exchange) ->
+				amqpClient.queue queueName, {}, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message) ->
 						channelHandler.handleMessage channel, message
@@ -93,14 +83,12 @@ createClient = (name) ->
 		else
 			amqpClientReady.then subscribeTopic
 
-
 	amqpClient.subscribeQueue = (channel, options, channelHandler) ->
 		queueName = "#{channel}"
-		logger.debug "[#{name}][AMQP][SUBSCRIBE] Subcribing to channel '#{channel}' with queue: '#{queueName}'"
-
+		logger.info "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][SUBSCRIBE] Subscribing to channel '#{channel}' with queue: '#{queueName}'"
 		subscribeQueue = () ->
 			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
-				queue = amqpClient.queue queueName, options, (queue) ->
+				amqpClient.queue queueName, options, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message, headers, deliveryInfo, messageObject) ->
 						channelHandler.handleMessage channel, message, headers, deliveryInfo, messageObject
@@ -111,10 +99,6 @@ createClient = (name) ->
 			amqpClientReady.then subscribeQueue
 
 	amqpClient
-
-####################################################################
-# Exports
-####################################################################
 
 module.exports =
 	createClient: createClient

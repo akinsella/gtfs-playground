@@ -40,7 +40,7 @@ class AmqpTaskSubmitterStream extends stream.Writable
 			records.unshift(firstLine)
 
 		queueName = "#{@model}_#{@job.uuid}".toUpperCase().replace /[-]/g, '_'
-		@amqpClient.publishText queueName, { agency: { key: @agency.key }, records: records, job: @job }, cb
+		@amqpClient.publishMessage queueName, { agency: { key: @agency.key }, records: records, job: @job }, cb
 
 
 ########################################################################################

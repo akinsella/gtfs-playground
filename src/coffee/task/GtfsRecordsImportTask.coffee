@@ -58,7 +58,7 @@ class GtfsRecordsImportTask
 					inserted += result.inserted
 					errors += result.errors
 #					logger.info "[#{process.pid}][MONGO][SUCCESS][#{message.agency.key}][#{self.gtfsFileBaseName}][#{inserted}] Total lines inserted: #{inserted}" if Math.floor(inserted/10) % 100 == 0
-					self.amqpClient.publishJSON "#{message.job.replyQueue}",
+					self.amqpClient.publishMessage "#{message.job.replyQueue}",
 						inserted: result.inserted
 						errors: result.errors
 						agency: result.agency

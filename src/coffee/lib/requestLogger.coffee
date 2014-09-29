@@ -12,7 +12,7 @@ util = require 'util'
 middleware = () ->
 	(req, res, next) ->
 			logger.info  """---------------------------------------------------------
-							Http Request - Pid process: [#{process.pid}]
+							Http Request - Pid process:
 							Http Request - Url: #{req.url}
 							Http Request - Query: #{util.inspect(req.query)}
 							Http Request - Method: #{req.method}

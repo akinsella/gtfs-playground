@@ -57,7 +57,7 @@ class GtfsRecordsImportTask
 				.then (result) ->
 					inserted += result.inserted
 					errors += result.errors
-#					logger.info "[#{process.pid}][MONGO][SUCCESS][#{message.agency.key}][#{self.gtfsFileBaseName}][#{inserted}] Total lines inserted: #{inserted}" if Math.floor(inserted/10) % 100 == 0
+#					logger.info "[MONGO][SUCCESS][#{message.agency.key}][#{self.gtfsFileBaseName}][#{inserted}] Total lines inserted: #{inserted}" if Math.floor(inserted/10) % 100 == 0
 					self.amqpClient.publishMessage "#{message.job.replyQueue}",
 						inserted: result.inserted
 						errors: result.errors
@@ -65,7 +65,7 @@ class GtfsRecordsImportTask
 						process:
 							pid: process.pid
 				.catch (err) ->
-#					logger.info "[#{process.pid}][ERROR][#{err.type}][#{message.agency.key}][#{self.gtfsFileBaseName}][#{inserted}] #{err.message} - Stack: #{err.stack}"
+#					logger.info "[ERROR][#{err.type}][#{message.agency.key}][#{self.gtfsFileBaseName}][#{inserted}] #{err.message} - Stack: #{err.stack}"
 					acknowledge()
 			.on 'finish', (err) ->
 				acknowledge()

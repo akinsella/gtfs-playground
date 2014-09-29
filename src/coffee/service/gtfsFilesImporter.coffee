@@ -28,9 +28,9 @@ importGTFSFiles = (agency, GTFSFiles, downloadDir) ->
 	job =
 		uuid: new Chance().hash({ length: 4, casing: 'upper' })
 
-	logger.info "[#{process.pid}][JOB:#{job.uuid}][GTFS_IMPORT] Importing GTFS files ..."
+	logger.info "[JOB:#{job.uuid}][GTFS_IMPORT] Importing GTFS files ..."
 
-	amqpClient.publishMessage "JOB_START", job: job
+	amqpClient.publishMessage "JOB_START", { job: job }
 
 	Promise.all(
 		GTFSFiles.map (GTFSFile) ->

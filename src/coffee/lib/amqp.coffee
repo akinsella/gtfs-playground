@@ -39,13 +39,14 @@ createClient = (amqpClientName) ->
 	amqpClient.publishMessage = (channel, message, callback) ->
 		exchangeOpts = { type: "fanout", confirm: true }
 
-		jsonMessage = JSON.stringify(message)
 		if logger.isTraceEnabled()
+			jsonMessage = JSON.stringify(message)
 			logger.trace "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][PUBLISH][Channel:#{channel}] #{jsonMessage}"
 		else
+			jsonMessage = JSON.stringify(message)
 			logger.debug "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][PUBLISH][Channel:#{channel}] #{jsonMessage.substring(0, Math.min(30, jsonMessage.length))}"  if logger.isDebugEnabled()
 		publishMessage = (exchange) ->
-			exchange.publish channel, jsonMessage, {}, (err, data) ->
+			exchange.publish channel, message, {}, (err, data) ->
 				logger.error "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][PUBLISH][Channel:#{channel}] Got an error on send - Error: #{JSON.stringify(error)}"  if err
 				callback err, data  if exchangeOpts.confirm and callback
 				callback()  unless exchangeOpts.confirm
@@ -72,7 +73,7 @@ createClient = (amqpClientName) ->
 		queueName = "#{channel}_#{channelUuid}".toUpperCase().replace(/[-]/g, "_")
 		logger.info "[#{amqpClientName}][AMQP][#{amqpClient.uuid}][SUBSCRIBE] Subscribing to channel '#{channel}' with topic: '#{queueName}'"
 		subscribeTopic = () ->
-			amqpClient.exchange channel, { type: "fanout" }, ((exchange) -> ), (exchange) ->
+			amqpClient.exchange channel, { type: "fanout" }, (exchange) ->
 				amqpClient.queue queueName, {}, (queue) ->
 					queue.bind exchange, channel
 					queue.subscribe (message) ->

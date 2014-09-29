@@ -31,7 +31,7 @@ class SplitLinesToObjectStream extends stream.Transform
 	_transform: (chunk, encoding, callback) ->
 		@index++
 
-		logger.info "[CL2O][#{process.pid}] Index: #{@index}"  if @index % 10000 == 0
+		logger.info "[CL2O]Index: #{@index}"  if @index % 10000 == 0
 
 		this.push(
 			model: @GTFSFile.collection.modelName

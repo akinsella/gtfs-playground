@@ -33,11 +33,11 @@ if !config
 		feature:
 			stopWatch: true
 		logger:
-			threshold: process.env.LOGGER_THRESHOLD_LEVEL || 'info'
+			threshold: process.env.LOGGER_THRESHOLD_LEVEL || 'debug'
 			console:
-				level: process.env.LOGGER_CONSOLE_THRESHOLD_LEVEL || 'info'
+				level: process.env.LOGGER_CONSOLE_THRESHOLD_LEVEL || 'debug'
 			file:
-				level: process.env.LOGGER_FILE_THRESHOLD_LEVEL || 'info'
+				level: process.env.LOGGER_FILE_THRESHOLD_LEVEL || 'debug'
 				directory: process.env.LOGGER_FILE_DIRECTORY || './logs'
 				filename: process.env.LOGGER_FILE_FILENAME || "output-#{moment().format("YYYY-MM-DD")}.log"
 		metrics:

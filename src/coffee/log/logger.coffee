@@ -53,8 +53,8 @@ logger = new winston.Logger(
 		level: loggerConfig.transports.console.level
 		levels: loggerConfig.levels
 		colorize: loggerConfig.transports.console.colorize
-		timestamp: ->
-			moment(Date.now()).format loggerConfig.transports.console.timestamp
+		timestamp: () ->
+			"[#{process.pid}|#{process.env.WORKER_ID || '0'}] #{moment(Date.now()).format(loggerConfig.transports.console.timestamp)}"
 	)]
 )
 logger.isLevelEnabled = (level) ->
@@ -63,15 +63,15 @@ logger.isLevelEnabled = (level) ->
 
 
 isDebugEnabled = logger.isLevelEnabled("debug")
-logger.isDebugEnabled = ->
+logger.isDebugEnabled = () ->
 	isDebugEnabled
 
 isTraceEnabled = logger.isLevelEnabled("trace")
-logger.isTraceEnabled = ->
+logger.isTraceEnabled = () ->
 	isTraceEnabled
 
 isInfoEnabled = logger.isLevelEnabled("info")
-logger.isInfoEnabled = ->
+logger.isInfoEnabled = () ->
 	isInfoEnabled
 
 

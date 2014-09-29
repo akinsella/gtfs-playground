@@ -29,7 +29,7 @@ class CsvLineToObjectStream extends stream.Transform
 
 	_transform: (chunk, encoding, callback) ->
 
-		logger.info "[CL2O][#{process.pid}] Index: #{@index}" if @index % 10000 == 0
+		logger.info "[CL2O]Index: #{@index}" if @index % 10000 == 0
 		this.push(chunk)
 
 		callback()

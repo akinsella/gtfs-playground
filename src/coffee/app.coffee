@@ -93,7 +93,7 @@ app.get "/import", gtfsImportController.importData
 ### Job stuff
 ########################################################################################
 
-logger.info "[#{process.pid}] Initializing Job Start consumer"
+logger.info "Initializing Job Start consumer"
 amqpClient = amqp.createClient "APP"
 
 amqpClient.subscribeTopic "JOB_START", new JobStartConsumer(amqpClient)

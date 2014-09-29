@@ -20,7 +20,9 @@ class JobInactivityTimeoutError extends Error
 
 class InsertedResultConsumer
 
-	constructor: (@agency, @timeout) ->
+	constructor: (@agency, @GTFSFile, @timeout) ->
+
+		logger.info "[INSERT_RESULT_CONSUMER][START] Starting Insert Result Consumer for agency: '#{@agency.key}' and GTFS File: '#{@GTFSFile.fileNameBase}'"
 
 		self = this
 		@inserted = 0
@@ -33,11 +35,11 @@ class InsertedResultConsumer
 
 		intervalRef = setInterval () =>
 			if self.previousBatchResultCount == self.batchResultCount
-				logger.info "[MONGO][#{process.pid}][#{self.batchResultCount}] Inactivity detected for agency: '#{self.agency.key}' - Stopping job"
+				logger.info "[INSERT_RESULT_CONSUMER][#{self.batchResultCount}][FAILURE] Inactivity detected for agency: '#{self.agency.key}' and GTFS File: '#{@GTFSFile.fileNameBase}' - Stopping job"
 				clearInterval(intervalRef)
 				self.deferred.reject(new JobInactivityTimeoutError(self.agency))
 			else
-				logger.info "[MONGO][#{process.pid}][#{self.batchResultCount}] Activity detected for agency: '#{self.agency.key}' - Continuing job"
+				logger.info "[INSERT_RESULT_CONSUMER][#{self.batchResultCount}][SUCCESS] Activity detected for agency: '#{self.agency.key}' and GTFS File: '#{@GTFSFile.fileNameBase}' - Continuing job"
 				self.previousBatchResultCount = self.batchResultCount
 		, @timeout
 
@@ -51,7 +53,7 @@ class InsertedResultConsumer
 			@agency.bounds = { sw:[], ne:[] }
 
 #		if message.agency && message.agency.bounds
-#			logger.info "[MONGO][#{process.pid}][#{@batchCount}] Agency batch bounds: #{util.inspect(message.agency.bounds)}"
+#			logger.info "[MONGO][#{@batchCount}] Agency batch bounds: #{util.inspect(message.agency.bounds)}"
 
 		if message.agency && message.agency.bounds
 			@agency.bounds.sw[0] = message.agency.bounds.sw[0] if @agency.bounds.sw[0] > message.agency.bounds.sw[0] or not @agency.bounds.sw[0]
@@ -64,7 +66,7 @@ class InsertedResultConsumer
 			];
 
 
-		logger.info "[MONGO][#{process.pid}][#{@batchResultCount}] Inserted lines: #{@inserted}, Errors:#{@errors} from process with pid: '#{message.process.pid}' - Agency [bounds: #{util.inspect(@agency?.bounds)}, center: #{@agency?.center}]"  if @batchResultCount % 100 == 0
+		logger.info "[INSERT_RESULT_CONSUMER][#{@batchResultCount}] Inserted lines: #{@inserted}, Errors:#{@errors} from process with pid: '#{message.process.pid}' - Agency [bounds: #{util.inspect(@agency?.bounds)}, center: #{@agency?.center}]"  if @batchResultCount % 100 == 0
 
 		if @batchResultCountExpected && @batchResultCountExpected == @batchResultCount
 			@deferred.fulfill({ agency: @agency, inserted: @inserted, errors: @errors, batchResultCount: @batchResultCount })

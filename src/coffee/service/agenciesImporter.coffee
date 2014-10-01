@@ -29,7 +29,7 @@ importAgencies = (agencies, GTFSFiles, downloadDir) ->
 		if err
 			deferred.reject err
 
-	agencies.forEach (agency) ->
+	for agency in agencies
 		if deferred.promise.isPending()
 			taskQueue.enqueueAgency(agency)
 

@@ -18,14 +18,16 @@ if !config
 		devMode: process.env.DEV_MODE == "true"
 		verbose: true
 		processNumber: process.env.INDEX_OF_PROCESS || 0
+		cluster:
+			debug: false
 		mongo:
 			dbname: process.env.MONGO_DBNAME || "gtfs"
-			hostname: process.env.MONGO_HOSTNAME || "localhost"
-			port: process.env.MONGO_PORT || 27017
 			username: process.env.MONGO_USERNAME # 'gtfs-playground'
 			password: process.env.MONGO_PASSWORD # 'Password123'
 			nativeParser: if process.env.MONGO_NATIVE_PARSER != undefined then (process.env.MONGO_NATIVE_PARSER == "true") else true
 			poolSize: process.env.MONGO_POOL_SIZE || 5
+			url: process.env.MONGO_URL || "localhost:27017"
+			mongosEnabled: process.env.MONGOS_ENABLED == 'true'
 		monitoring:
 			newrelic:
 				apiKey: process.env.NEW_RELIC_API_KEY
@@ -90,6 +92,7 @@ module.exports =
 	amqp: config.amqp
 	downloads: config.downloads
 	metrics: config.metrics
+	cluster: config.cluster
 
 
 

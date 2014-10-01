@@ -14,9 +14,10 @@ config = require '../conf/config'
 
 logger.info "config: #{JSON.stringify(config.mongo)}"
 
-url = "mongodb://#{config.mongo.hostname}:#{config.mongo.port}/#{config.mongo.dbname}"
+url = "mongodb://#{config.mongo.url}/#{config.mongo.dbname}"
 options =
 	db: { native_parser: config.mongo.nativeParser }
+	mongos: config.mongo.mongosEnabled
 	server: { poolSize: config.mongo.poolSize }
 	user: config.mongo.username
 	pass: config.mongo.password

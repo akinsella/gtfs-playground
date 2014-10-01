@@ -14,7 +14,7 @@ logger = require '../log/logger'
 ### variables
 ########################################################################################
 
-dbPromise = Promise.promisify(MongoClient.connect)("mongodb://#{config.mongo.hostname}:#{config.mongo.port}/#{config.mongo.dbname}")
+dbPromise = Promise.promisify(MongoClient.connect)("mongodb://#{config.mongo.url}/#{config.mongo.dbname}")
 db = undefined
 
 
@@ -26,7 +26,7 @@ performBatchInsert = (db, model, records, callback) ->
 	modelCollection = db.collection(model)
 	batch = modelCollection.initializeUnorderedBulkOp()
 
-	records.forEach (record) ->
+	for record in records
 		batch.insert record
 
 	batch.execute callback
@@ -51,7 +51,7 @@ importLines = (agency, model, records) ->
 	deferred = Promise.defer()
 
 
-	records.forEach (record) ->
+	for record in records
 		record.agency_key = agency.key
 		if record.stop_sequence
 			record.stop_sequence = parseInt(record.stop_sequence, 10)

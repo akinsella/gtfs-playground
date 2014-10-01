@@ -3,24 +3,27 @@ fs = require 'fs'
 recluster = require 'recluster'
 
 logger = require './log/logger'
+config = require './conf/config'
 
 _cluster = require 'cluster'
 cluster = recluster "#{__dirname}/app"
 
-recluster_fork_fn = _cluster.fork
+if config.cluster.debug
 
-_cluster.fork = (env) ->
-	debug = process.execArgv.filter((s) -> s.indexOf('--debug') >= 0 ).length > 0
+	recluster_fork_fn = _cluster.fork
 
-	if (debug)
-		_cluster.settings.execArgv.push('--debug-brk=' + (5859 + env.WORKER_ID));
+	_cluster.fork = (env) ->
+		debug = process.execArgv.filter((s) -> s.indexOf('--debug') >= 0 ).length > 0
 
-	worker = recluster_fork_fn(env)
+		if (debug)
+			_cluster.settings.execArgv.push('--debug-brk=' + (5859 + env.WORKER_ID));
 
-	if (debug)
-		_cluster.settings.execArgv.pop();
+		worker = recluster_fork_fn(env)
 
-	return worker
+		if (debug)
+			_cluster.settings.execArgv.pop();
+
+		return worker
 
 
 cluster.on "fork", (worker) ->
